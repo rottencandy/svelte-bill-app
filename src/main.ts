@@ -1,0 +1,3 @@
+// initialize your app
+// and ...
+nw.Window.open('app/index.html', {}, (win) => {});
