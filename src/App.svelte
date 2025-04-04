@@ -12,8 +12,8 @@
         privateMark: "",
     })
     let billDetails = $state<Bill>({
-        // TODO set to today
-        date: new Date(),
+        // get today in format yyyy-mm-dd
+        date: new Date().toISOString().slice(0, 10),
         // TODO set from db
         invoice: 0,
         transport: "",

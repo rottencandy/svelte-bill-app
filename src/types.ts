@@ -16,7 +16,7 @@ export type Item = {
 }
 
 export type Bill = {
-    date: Date
+    date: string
     invoice: number
     transport: string
     paymentTerms: string
