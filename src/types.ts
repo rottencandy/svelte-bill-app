@@ -12,7 +12,7 @@ export type Item = {
     quantity: number
     unit: string
     rate: number
-    gst: number
+    gst: 12 | 18 | 28
 }
 
 export type Bill = {
