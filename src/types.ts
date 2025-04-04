@@ -17,9 +17,8 @@ export type Item = {
 
 export type Bill = {
     date: Date
-    invoice: string
+    invoice: number
     transport: string
     paymentTerms: string
     esugam: string
-    items: Item[]
 }
