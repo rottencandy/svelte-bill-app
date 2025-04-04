@@ -1,11 +1,22 @@
 <script lang="ts">
+    import type { Bill, Party } from "./types"
     import PartyDetails from "./PartyDetails.svelte"
+    import BillDetails from "./BillDetails.svelte"
 
     let partyDetails = $state<Party>({
         name: "",
         address: "",
         tin: "",
         privateMark: "",
+    })
+    let billDetails = $state<Bill>({
+        // TODO set to today
+        date: new Date(),
+        // TODO set from db
+        invoice: 0,
+        transport: "",
+        paymentTerms: "",
+        esugam: "",
     })
 </script>
 
@@ -17,6 +28,7 @@
 
         <div class="flex mb-6 gap-4">
             <PartyDetails party={partyDetails} />
+            <BillDetails bill={billDetails} />
         </div>
     </div>
 </main>
