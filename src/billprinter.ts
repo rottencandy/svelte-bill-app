@@ -1,18 +1,20 @@
-import ExcelJS from "exceljs"
+import { Workbook, type Worksheet, type Style } from "exceljs"
 import path from "path"
+import fs from "fs"
+import type { Bill, Item, Party } from "./types"
 
 // Constants from your Python code (assuming these are defined elsewhere)
-const MAX_ITEMS_IN_PAGE = 35
+export const MAX_ITEMS_IN_PAGE = 23
 const CELL_OFFSET = 14
-const bills_path = "./" // Adjust this path as needed
+const bills_path = "." // Adjust this path as needed
 
 // Helper function to add border
 function addBorder(
-    worksheet: ExcelJS.Worksheet,
+    worksheet: Worksheet,
     startRow: number,
     endRow: number,
     startCol: number,
-    emptyBorder: ExcelJS.Style,
+    emptyBorder: Style,
 ) {
     for (let i = startRow; i < endRow; i++) {
         worksheet.getCell(startCol, i).value = ""
@@ -20,23 +22,32 @@ function addBorder(
     }
 }
 
+function bufferToArrayBuffer(buffer: Buffer) {
+    const arrayBuffer = new ArrayBuffer(buffer.length)
+    const view = new Uint8Array(arrayBuffer)
+    for (let i = 0; i < buffer.length; ++i) {
+        view[i] = buffer[i]
+    }
+    return view
+}
+
 export const fillAllData = async (
-    party_details_list: any[],
-    bill_details_list: any[],
-    all_items_list: any[],
+    partyDetails: Party,
+    billDetails: Bill,
+    items: Item[],
     igst: boolean,
     subtotal: number,
     total: number,
+    tax12: number,
     tax18: number,
     tax28: number,
-    tax12: number,
     other: number,
+    total12: number,
     total18: number,
     total28: number,
-    total12: number,
 ) => {
     // Create a new workbook
-    const workbook = new ExcelJS.Workbook()
+    const workbook = new Workbook()
     const filePath = path.join(bills_path, "unformatted.xlsx")
 
     // Create formats (styles)
@@ -138,7 +149,7 @@ export const fillAllData = async (
         },
     }
 
-    const partyNameAddr = party_details_list[0] + "\n" + party_details_list[1]
+    const partyNameAddr = partyDetails.name + "\n" + partyDetails.address
     const nameAddrFmt = {
         alignment: { horizontal: "left", vertical: "middle" },
         font: {
@@ -149,20 +160,20 @@ export const fillAllData = async (
         wrapText: true,
     } as const
 
-    const partyTin = "GSTIN : " + party_details_list[2]
+    const partyTin = "GSTIN : " + partyDetails.tin
     const details =
         "Invoice No.   :" +
-        bill_details_list[1] +
+        billDetails.invoice +
         "\nDate          :" +
-        bill_details_list[0] +
+        billDetails.date +
         "\nTransport     :" +
-        bill_details_list[2] +
+        billDetails.transport +
         "\nPayment Terms :" +
-        bill_details_list[3] +
+        billDetails.paymentTerms +
         "\nESUGAM No.    :" +
-        bill_details_list[4]
+        billDetails.esugam
 
-    const totalPages = Math.ceil(all_items_list.length / MAX_ITEMS_IN_PAGE)
+    const totalPages = Math.ceil(items.length / MAX_ITEMS_IN_PAGE)
     let slno = 1
 
     for (let page = 0; page < totalPages; page++) {
@@ -315,10 +326,10 @@ export const fillAllData = async (
 
         // Add items to the table
         for (let s = 0; s < MAX_ITEMS_IN_PAGE; s++) {
-            if (all_items_list.length === 0) break
+            const item = items[s]
+            if (item === undefined) break
 
-            const itemlist = all_items_list[0]
-            const particular = itemlist[1] + " " + itemlist[0]
+            const particular = item.size + " " + item.particulars
             const row = s + CELL_OFFSET
 
             worksheet.getCell(`A${row}`).value = `${slno}.`
@@ -328,28 +339,27 @@ export const fillAllData = async (
             worksheet.getCell(`B${row}`).value = particular
             worksheet.getCell(`B${row}`).style = detFormat
 
-            worksheet.getCell(`F${row}`).value = itemlist[2]
+            worksheet.getCell(`F${row}`).value = item.hsn
             worksheet.getCell(`F${row}`).style = detcFormat
 
-            worksheet.getCell(`G${row}`).value = itemlist[3]
+            worksheet.getCell(`G${row}`).value = item.quantity
             worksheet.getCell(`G${row}`).style = detcFormat
 
-            worksheet.getCell(`H${row}`).value = itemlist[4]
+            worksheet.getCell(`H${row}`).value = item.unit
             worksheet.getCell(`H${row}`).style = detcFormat
 
-            worksheet.getCell(`I${row}`).value = itemlist[5]
+            worksheet.getCell(`I${row}`).value = item.rate
             worksheet.getCell(`I${row}`).style = detcFormat
 
-            worksheet.getCell(`J${row}`).value = itemlist[6]
+            worksheet.getCell(`J${row}`).value = item.gst
             worksheet.getCell(`J${row}`).style = detcFormat
 
-            const amount = parseFloat(itemlist[3]) * parseFloat(itemlist[5])
+            const amount = item.quantity * item.rate
             worksheet.mergeCells(`K${row}:L${row}`)
             worksheet.getCell(`K${row}`).value = amount.toFixed(2)
             worksheet.getCell(`K${row}`).style = det1Format
 
             slno++
-            all_items_list.shift()
         }
 
         if (page === totalPages - 1) {
@@ -524,6 +534,7 @@ export const fillAllData = async (
         }
     }
 
-    await workbook.xlsx.writeFile(filePath)
+    const buffer = await workbook.xlsx.writeBuffer()
+    fs.writeFileSync(filePath, bufferToArrayBuffer(buffer as Buffer))
     console.log("Excel file created successfully")
 }

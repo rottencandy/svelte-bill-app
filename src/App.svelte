@@ -4,6 +4,8 @@
     import BillDetails from "./BillDetails.svelte"
     import Items from "./Items.svelte"
     import Total from "./Total.svelte"
+    import PrintDialog from "./PrintDialog.svelte"
+    import { fillAllData } from "./billprinter"
 
     let partyDetails = $state<Party>({
         name: "",
@@ -23,12 +25,16 @@
     let items = $state<Item[]>([])
     let useIGST = $state(false)
     let otherAmount = $state(0)
+    let dialog: any
 
     const total = $derived.by(() => {
         let sum = 0
         let gst12 = 0
         let gst18 = 0
         let gst28 = 0
+        let total12 = 0
+        let total18 = 0
+        let total28 = 0
         for (let i = 0; i < items.length; i++) {
             const item = items[i]
             const itemTotal = item.quantity * item.rate
@@ -37,32 +43,65 @@
             switch (item.gst) {
                 case 12:
                     gst12 += itemTax
+                    total12 += itemTotal
                     break
                 case 18:
                     gst18 += itemTax
+                    total18 += itemTotal
                     break
                 case 28:
                     gst28 += itemTax
+                    total28 += itemTotal
                     break
             }
         }
         return {
             sum,
+            // amout of tax that each bracket amounts to
             gst12,
             gst18,
             gst28,
+            // principal amount that is taxable in each bracket
+            total12,
+            total18,
+            total28,
         }
     })
 
-    const fillAndClose = () => {}
+    const finalTotal = $derived(
+        total.sum + total.gst12 + total.gst18 + total.gst28 + otherAmount,
+    )
 
-    const finalPrint = () => {}
+    const fillAndClose = () => {
+        fillAllData(
+            partyDetails,
+            billDetails,
+            items,
+            useIGST,
+            total.sum,
+            finalTotal,
+            total.gst12,
+            total.gst18,
+            total.gst28,
+            otherAmount,
+            total.total12,
+            total.total18,
+            total.total28,
+        )
+    }
 
-    const finalSave = () => {}
+    const finalPrint = (copies: number) => {
+        fillAndClose()
+    }
+
+    const finalSave = (copies: number) => {
+        fillAndClose()
+    }
 
     const printBill = () => {
         // TODO print logic would go here
         console.log("Printing bill...")
+        dialog.open()
     }
 </script>
 
@@ -92,6 +131,13 @@
                 Print...
             </button>
         </div>
+
+        <PrintDialog
+            bind:this={dialog}
+            {items}
+            onSave={finalSave}
+            onPrint={finalPrint}
+        />
     </div>
 </main>
 

@@ -1,6 +1,6 @@
 import { htmlPlugin } from "@craftamap/esbuild-plugin-html"
 import sveltePlugin from "esbuild-svelte"
-import tailwindPlugin from 'esbuild-plugin-tailwindcss'
+import tailwindPlugin from "esbuild-plugin-tailwindcss"
 import esbuild from "esbuild"
 
 const ctx = await esbuild.context({
@@ -9,6 +9,7 @@ const ctx = await esbuild.context({
     metafile: true,
     charset: "utf8",
     format: "iife",
+    external: ["fs", "path"],
     outdir: "app",
     loader: { ".png": "dataurl" },
     assetNames: "[name]",
@@ -27,7 +28,7 @@ const ctx = await esbuild.context({
         tailwindPlugin(),
     ],
     //minify: true,
-    mangleProps: /_$/,
+    //mangleProps: /_$/,
 })
 
 try {
