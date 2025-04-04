@@ -3,6 +3,7 @@
     import PartyDetails from "./PartyDetails.svelte"
     import BillDetails from "./BillDetails.svelte"
     import Items from "./Items.svelte"
+    import Total from "./Total.svelte"
 
     let partyDetails = $state<Party>({
         name: "",
@@ -37,6 +38,8 @@
             <h2 class="font-bold mb-2">Items</h2>
             <Items {items} />
         </div>
+
+        <Total {items} />
     </div>
 </main>
 
