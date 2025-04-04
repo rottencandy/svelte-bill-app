@@ -16,9 +16,17 @@ export type Item = {
 }
 
 export type Bill = {
+    /** this needs to be in the format yyyy-mm-dd for date input to work */
     date: string
     invoice: number
     transport: string
     paymentTerms: string
     esugam: string
+}
+
+export type Total = {
+    sum: number
+    gst12: number
+    gst18: number
+    gst28: number
 }
