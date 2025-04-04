@@ -10,7 +10,7 @@
         quantity: 0,
         unit: "",
         rate: 0,
-        gst: 18,
+        gst: 18 as const,
     })
 
     let currentItem = $state<Item>(getDefault())
@@ -52,8 +52,8 @@
     }
 </script>
 
-<div class="grid grid-cols-9 gap-2 mb-2 bg-blue-200 p-2">
-    <div>Particulars</div>
+<div class="grid grid-cols-10 gap-2 mb-2 bg-blue-200 p-2">
+    <div class="col-span-2">Particulars</div>
     <div>Size</div>
     <div>HSN Code</div>
     <div>Quantity</div>
@@ -66,47 +66,48 @@
 </div>
 
 <!-- Item Entry Form -->
-<div class="grid grid-cols-9 gap-2 mb-4">
+<div class="grid grid-cols-10 gap-2 mb-4">
     <input
         type="text"
+        placeholder="Enter name..."
         bind:value={currentItem.particulars}
-        class="p-2 border rounded"
+        class="p-1 border rounded col-span-2"
     />
     <input
         type="text"
         bind:value={currentItem.size}
-        class="p-2 border rounded"
+        class="p-1 border rounded"
     />
     <input
         type="number"
         bind:value={currentItem.hsn}
-        class="p-2 border rounded"
+        class="p-1 border rounded"
     />
     <input
         type="number"
         bind:value={currentItem.quantity}
-        class="p-2 border rounded"
+        class="p-1 border rounded"
     />
     <input
         type="text"
         bind:value={currentItem.unit}
-        class="p-2 border rounded"
+        class="p-1 border rounded"
     />
     <input
         type="number"
         bind:value={currentItem.rate}
-        class="p-2 border rounded"
+        class="p-1 border rounded"
     />
-    <select class="p-2 border rounded" bind:value={currentItem.gst}>
+    <select class="p-1 border rounded" bind:value={currentItem.gst}>
         <option value={12}>12</option>
         <option value={18}>18</option>
         <option value={28}>28</option>
     </select>
-    <div class="p-2">{currentTotal}</div>
+    <div class="p-1">{currentTotal}</div>
     <button
         onclick={addItem}
         disabled={disableAdd}
-        class="bg-green-500 text-white p-2 rounded hover:bg-green-600 disabled:bg-green-200"
+        class="bg-green-500 text-white p-1 rounded hover:bg-green-600 disabled:bg-green-200"
     >
         Add
     </button>
@@ -116,9 +117,9 @@
 <div class="max-h-60 overflow-y-auto border rounded">
     {#each items as item, index}
         <div
-            class="grid grid-cols-9 gap-2 p-2 border-b hover:bg-gray-100 cursor-pointer"
+            class="grid grid-cols-10 gap-2 p-2 border-b odd:bg-gray-100 cursor-pointer"
         >
-            <div>{item.particulars}</div>
+            <div class="col-span-2">{item.particulars}</div>
             <div>{item.size}</div>
             <div>{item.hsn}</div>
             <div>{item.quantity}</div>
@@ -128,16 +129,16 @@
             <div>
                 {(item.quantity * item.rate).toFixed(2)}
             </div>
-            <div class="flex mt-2 gap-2">
+            <div class="flex gap-2">
                 <button
                     onclick={() => editItem(index)}
-                    class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+                    class="bg-yellow-500 text-white px-4 py-1 rounded hover:bg-yellow-600"
                 >
                     E
                 </button>
                 <button
                     onclick={() => deleteItem(index)}
-                    class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600"
                 >
                     D
                 </button>

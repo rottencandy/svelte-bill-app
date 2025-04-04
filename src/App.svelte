@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Item, type Bill, type Party } from "./types"
+    import type { Item, Bill, Party } from "./types"
     import PartyDetails from "./PartyDetails.svelte"
     import BillDetails from "./BillDetails.svelte"
     import Items from "./Items.svelte"
@@ -21,6 +21,7 @@
         esugam: "",
     })
     let items = $state<Item[]>([])
+    let useIGST = $state(false)
 </script>
 
 <main>
@@ -30,22 +31,18 @@
         </h1>
 
         <div class="flex mb-6 gap-4">
-            <PartyDetails party={partyDetails} />
-            <BillDetails bill={billDetails} />
+            <PartyDetails bind:party={partyDetails} />
+            <BillDetails bind:bill={billDetails} />
         </div>
 
         <div class="border p-4 rounded mb-6">
             <h2 class="font-bold mb-2">Items</h2>
-            <Items {items} />
+            <Items bind:items />
         </div>
 
-        <Total {items} />
+        <Total {items} bind:useIGST />
     </div>
 </main>
 
 <style>
-    main {
-        height: 100%;
-        width: 100%;
-    }
 </style>

@@ -26,7 +26,7 @@ const ctx = await esbuild.context({
         sveltePlugin(),
         tailwindPlugin(),
     ],
-    minify: true,
+    //minify: true,
     mangleProps: /_$/,
 })
 

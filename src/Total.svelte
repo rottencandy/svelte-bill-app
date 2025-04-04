@@ -1,17 +1,18 @@
 <script lang="ts">
     import type { Item } from "./types"
 
-    let { items }: { items: Item[] } = $props()
+    let { items, useIGST = $bindable() }: { items: Item[]; useIGST: boolean } =
+        $props()
 
     let otherAmount = $state(0)
-    let useIGST = $state(false)
 
     const totals = $derived.by(() => {
-        let sum = otherAmount
+        let sum = 0
         let gst12 = 0
         let gst18 = 0
         let gst28 = 0
-        items.forEach((item) => {
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i]
             const itemTotal = item.quantity * item.rate
             const itemTax = itemTotal * (item.gst / 100)
             sum += itemTotal
@@ -26,7 +27,7 @@
                     gst28 += itemTax
                     break
             }
-        })
+        }
         return {
             sum,
             gst12,
@@ -34,12 +35,14 @@
             gst28,
         }
     })
+
     const total = $derived(
         totals.sum + totals.gst12 + totals.gst18 + totals.gst28 + otherAmount,
     )
+
     const roundOff = $derived(Math.round(total))
 
-    function printBill() {
+    const printBill = () => {
         // TODO print logic would go here
         console.log("Printing bill...")
     }
@@ -91,7 +94,7 @@
     <input
         type="number"
         bind:value={otherAmount}
-        class="flex-1 p-2 border rounded text-right"
+        class="flex-1 p-1 border rounded text-right"
     />
 
     <div class="font-bold">Total</div>
