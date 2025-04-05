@@ -1,7 +1,7 @@
 import { Workbook, type Worksheet, type Style } from "exceljs"
 import path from "path"
 import fs from "fs"
-import type { Bill, Item, Party } from "./types"
+import type { Bill, Item, Party, Total } from "./types"
 import { BASEPATH, MAX_ITEMS_IN_PAGE } from "./const"
 import { spawn } from "child_process"
 
@@ -152,16 +152,19 @@ export const fillDataToTempFile = async (
     billDetails: Bill,
     items: Item[],
     igst: boolean,
-    subtotal: number,
-    total: number,
-    tax12: number,
-    tax18: number,
-    tax28: number,
+    total: Total,
+    finalTotal: number,
     other: number,
-    total12: number,
-    total18: number,
-    total28: number,
 ) => {
+    const {
+        sum: subtotal,
+        gst12,
+        gst18,
+        gst28,
+        total12,
+        total18,
+        total28,
+    } = total
     // Create a new workbook
     const workbook = new Workbook()
 
@@ -391,8 +394,8 @@ export const fillDataToTempFile = async (
             worksheet.getCell("G47").value = "Total"
             worksheet.getCell("G47").style = detFormat
 
-            const roundedTotal = parseFloat(total.toFixed(0))
-            const roundoff = Math.abs(total - roundedTotal)
+            const roundedTotal = parseFloat(finalTotal.toFixed(0))
+            const roundoff = Math.abs(finalTotal - roundedTotal)
 
             worksheet.mergeCells("K38:L38")
             worksheet.getCell("K38").value = subtotal.toFixed(2)
@@ -412,7 +415,7 @@ export const fillDataToTempFile = async (
 
             if (igst) {
                 // IGST uses only 1 row per Tax %
-                if (tax28 !== 0) {
+                if (gst28 !== 0) {
                     worksheet.mergeCells("G39:H39")
                     worksheet.getCell("G39").value = total28.toFixed(2)
                     worksheet.getCell("G39").style = det1Format
@@ -422,11 +425,11 @@ export const fillDataToTempFile = async (
                     worksheet.getCell("I39").style = detFormat
 
                     worksheet.mergeCells("K39:L39")
-                    worksheet.getCell("K39").value = tax28.toFixed(2)
+                    worksheet.getCell("K39").value = gst28.toFixed(2)
                     worksheet.getCell("K39").style = det1Format
                 }
 
-                if (tax18 !== 0) {
+                if (gst18 !== 0) {
                     worksheet.mergeCells("G40:H40")
                     worksheet.getCell("G40").value = total18.toFixed(2)
                     worksheet.getCell("G40").style = det1Format
@@ -436,11 +439,11 @@ export const fillDataToTempFile = async (
                     worksheet.getCell("I40").style = detFormat
 
                     worksheet.mergeCells("K40:L40")
-                    worksheet.getCell("K40").value = tax18.toFixed(2)
+                    worksheet.getCell("K40").value = gst18.toFixed(2)
                     worksheet.getCell("K40").style = det1Format
                 }
 
-                if (tax12 !== 0) {
+                if (gst12 !== 0) {
                     worksheet.mergeCells("G41:H41")
                     worksheet.getCell("G41").value = total12.toFixed(2)
                     worksheet.getCell("G41").style = det1Format
@@ -450,14 +453,14 @@ export const fillDataToTempFile = async (
                     worksheet.getCell("I41").style = detFormat
 
                     worksheet.mergeCells("K41:L41")
-                    worksheet.getCell("K41").value = tax12.toFixed(2)
+                    worksheet.getCell("K41").value = gst12.toFixed(2)
                     worksheet.getCell("K41").style = det1Format
                 }
             } else {
                 // Non IGST uses normal 2 rows per tax %
-                if (tax28 !== 0) {
+                if (gst28 !== 0) {
                     const t14 = total28 / 2
-                    const st = tax28 / 2
+                    const st = gst28 / 2
 
                     worksheet.mergeCells("G43:H43")
                     worksheet.getCell("G43").value = t14.toFixed(2)
@@ -484,9 +487,9 @@ export const fillDataToTempFile = async (
                     worksheet.getCell("K44").style = det1Format
                 }
 
-                if (tax18 !== 0) {
+                if (gst18 !== 0) {
                     const t9 = total18 / 2
-                    const t = tax18 / 2
+                    const t = gst18 / 2
 
                     worksheet.mergeCells("G39:H39")
                     worksheet.getCell("G39").value = t9.toFixed(2)
@@ -513,9 +516,9 @@ export const fillDataToTempFile = async (
                     worksheet.getCell("K40").style = det1Format
                 }
 
-                if (tax12 !== 0) {
+                if (gst12 !== 0) {
                     const t6 = total12 / 2
-                    const t = tax12 / 2
+                    const t = gst12 / 2
 
                     worksheet.mergeCells("G41:H41")
                     worksheet.getCell("G41").value = t6.toFixed(2)
@@ -642,10 +645,7 @@ export const cleanupTempFiles = () => {
 const sendPrintJob = async (filePath: string) => {
     return new Promise<void>((resolve) => {
         // Spawn a new process to run the Python script
-        const pythonProcess = spawn("py", [
-            "print_bill.py",
-            filePath,
-        ])
+        const pythonProcess = spawn("py", ["print_bill.py", filePath])
 
         // Handle output from the Python script
         pythonProcess.stdout.on("data", (data: string) => {

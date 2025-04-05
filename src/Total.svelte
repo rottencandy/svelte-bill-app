@@ -1,11 +1,13 @@
 <script lang="ts">
-    import type { Total } from "./types"
+    import type { Item, Total } from "./types"
 
     let {
+        items,
         total,
         useIGST = $bindable(),
         otherAmount = $bindable(),
     }: {
+        items: Item[]
         total: Total
         useIGST: boolean
         otherAmount: number

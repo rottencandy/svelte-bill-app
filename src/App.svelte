@@ -6,12 +6,13 @@
     import Total from "./Total.svelte"
     import PrintDialog from "./PrintDialog.svelte"
     import {
-    cleanupTempFiles,
+        cleanupTempFiles,
         fillDataToTempFile,
         saveTempFileAndSchedulePrintJob,
         saveTempToFile,
     } from "./billprinter"
     import { getInvoiceNo, incrementSavename } from "./database"
+    import { calculateTotal } from "./util"
 
     let printDialogElement: any
     let billDetailsElement: any
@@ -34,46 +35,7 @@
     let useIGST = $state(false)
     let otherAmount = $state(0)
 
-    const total = $derived.by(() => {
-        let sum = 0
-        let gst12 = 0
-        let gst18 = 0
-        let gst28 = 0
-        let total12 = 0
-        let total18 = 0
-        let total28 = 0
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i]
-            const itemTotal = item.quantity * item.rate
-            const itemTax = itemTotal * (item.gst / 100)
-            sum += itemTotal
-            switch (item.gst) {
-                case 12:
-                    gst12 += itemTax
-                    total12 += itemTotal
-                    break
-                case 18:
-                    gst18 += itemTax
-                    total18 += itemTotal
-                    break
-                case 28:
-                    gst28 += itemTax
-                    total28 += itemTotal
-                    break
-            }
-        }
-        return {
-            sum,
-            // amout of tax that each bracket amounts to
-            gst12,
-            gst18,
-            gst28,
-            // principal amount that is taxable in each bracket
-            total12,
-            total18,
-            total28,
-        }
-    })
+    const total = $derived(calculateTotal(items))
 
     const finalTotal = $derived(
         total.sum + total.gst12 + total.gst18 + total.gst28 + otherAmount,
@@ -85,15 +47,9 @@
             billDetails,
             items,
             useIGST,
-            total.sum,
+            total,
             finalTotal,
-            total.gst12,
-            total.gst18,
-            total.gst28,
             otherAmount,
-            total.total12,
-            total.total18,
-            total.total28,
         )
 
     const handlePrint = async (copies: 1 | 2 | 3) => {
@@ -106,6 +62,7 @@
         incrementSavename()
         cleanupTempFiles()
         resetAppState()
+        printDialogElement.close()
     }
 
     const handleSave = async () => {
@@ -114,6 +71,7 @@
         incrementSavename()
         cleanupTempFiles()
         resetAppState()
+        printDialogElement.close()
     }
 
     const printBill = () => {
@@ -168,7 +126,7 @@
             <Items bind:items />
         </div>
 
-        <Total {total} bind:useIGST bind:otherAmount />
+        <Total {items} {total} bind:useIGST bind:otherAmount />
 
         <div class="flex justify-center">
             <button

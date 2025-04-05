@@ -1,3 +1,5 @@
+export type Gst = 12 | 18 | 28
+
 export type Party = {
     name: string
     address: string
@@ -12,7 +14,7 @@ export type Item = {
     quantity: number
     unit: string
     rate: number
-    gst: 12 | 18 | 28
+    gst: Gst
 }
 
 export type Bill = {
@@ -26,7 +28,12 @@ export type Bill = {
 
 export type Total = {
     sum: number
+    // amout of tax that each bracket amounts to
     gst12: number
     gst18: number
     gst28: number
+    // principal amount that is taxable in each bracket
+    total12: number
+    total18: number
+    total28: number
 }
