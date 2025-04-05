@@ -8,7 +8,7 @@ export type Party = {
 export type Item = {
     particulars: string
     size: string
-    hsn: number
+    hsn: string
     quantity: number
     unit: string
     rate: number
