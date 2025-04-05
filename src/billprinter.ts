@@ -4,9 +4,9 @@ import fs from "fs"
 import type { Bill, Item, Party, Total } from "./types"
 import { BASEPATH, MAX_ITEMS_IN_PAGE } from "./const"
 import { spawn } from "child_process"
+import { calculatePages, calculateTotalsByHsn } from "./util"
 
-// Constants from your Python code (assuming these are defined elsewhere)
-const CELL_OFFSET = 14
+const ITEM_TABLE_START_OFFSET = 14
 const BILLS_PATH = path.join(BASEPATH, "saved_bills")
 const TEMPORARY_FILE_PATH = path.join(BILLS_PATH, "unformatted.xlsx")
 
@@ -69,20 +69,20 @@ const monoBillDetailsFmt: Partial<Style> = {
     font: { bold: true, name: "Courier New", size: 13 },
 }
 
-const det1Format: Partial<Style> = {
+const detailRightFormat: Partial<Style> = {
     alignment: { horizontal: "right", vertical: "middle", wrapText: true },
     font: { bold: true, name: "Courier New", size: 14 },
 }
 
-const detcFormat: Partial<Style> = {
+const detailCenterFormat: Partial<Style> = {
     alignment: { horizontal: "center", vertical: "middle", wrapText: true },
     font: { bold: true, name: "Courier New", size: 14 },
 }
 
-const tncTitleFormat: Partial<Style> = {
-    alignment: { horizontal: "left", vertical: "middle", wrapText: true },
-    font: { bold: true, name: "Calibri", size: 8 },
-}
+//const tncTitleFormat: Partial<Style> = {
+//    alignment: { horizontal: "left", vertical: "middle", wrapText: true },
+//    font: { bold: true, name: "Calibri", size: 8 },
+//}
 
 const tncFormat: Partial<Style> = {
     alignment: { horizontal: "left", vertical: "middle", wrapText: true },
@@ -106,46 +106,6 @@ const thinBorder: Partial<Style["border"]> = {
     right: { style: "thin" },
 }
 
-const duplicateSheet = (
-    workbook: Workbook,
-    source: Worksheet,
-    name: string,
-) => {
-    const newWorksheet = workbook.addWorksheet(name)
-    // Copy Model
-    newWorksheet.model = Object.assign(
-        {},
-        {
-            ...source.model,
-            name,
-            ...{ model: { name } },
-        },
-    )
-    // Deep Copy Rows & Cells
-    source.eachRow((row, rowNumber) => {
-        const newRow = newWorksheet.getRow(rowNumber)
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-            const newCell = newRow.getCell(colNumber)
-            newCell.value = cell.value
-            newCell.style = Object.assign({}, cell.style)
-        })
-    })
-    // Copy Merged Cells
-    source.model.merges.forEach((merge) => {
-        newWorksheet.mergeCells(merge)
-    })
-    return newWorksheet
-}
-
-function bufferToArrayBuffer(buffer: Buffer) {
-    const arrayBuffer = new ArrayBuffer(buffer.length)
-    const view = new Uint8Array(arrayBuffer)
-    for (let i = 0; i < buffer.length; ++i) {
-        view[i] = buffer[i]
-    }
-    return view
-}
-
 /** Fill and save all data to a temporary `unformatted.xlsx` workbook */
 export const fillDataToTempFile = async (
     partyDetails: Party,
@@ -165,6 +125,8 @@ export const fillDataToTempFile = async (
         total18,
         total28,
     } = total
+    const hsnTotals = Object.entries(calculateTotalsByHsn(items))
+
     // Create a new workbook
     const workbook = new Workbook()
 
@@ -192,9 +154,9 @@ export const fillDataToTempFile = async (
         "\nESUGAM No.    :" +
         billDetails.esugam
 
-    // TODO update this after adding hsn columns
-    const totalPages = Math.ceil(items.length / MAX_ITEMS_IN_PAGE)
-    let slno = 1
+    const totalItemsPerPage = calculatePages(items)
+    const totalPages = Math.ceil(items.length / totalItemsPerPage)
+    let itemIndex = 0
 
     for (let page = 0; page < totalPages; page++) {
         const worksheet = workbook.addWorksheet(`Page ${page + 1}`)
@@ -213,11 +175,11 @@ export const fillDataToTempFile = async (
 
         // Owner name, details
         worksheet.mergeCells("A1:C1")
-        worksheet.getCell("A1").value = "GSTIN : 29AKRPB0864E1Z4"
+        worksheet.getCell("A1").value = "GSTIN: 29AKRPB0864E1Z4"
         worksheet.getCell("A1").style = tinFormat
 
         worksheet.mergeCells("K1:L2")
-        worksheet.getCell("K1").value = "Ph : 41140838\nMob : 9886258876"
+        worksheet.getCell("K1").value = "Ph: 41140838\nMob: 9886258876"
         worksheet.getCell("K1").style = phFormat
 
         worksheet.mergeCells("C2:J4")
@@ -339,41 +301,87 @@ export const fillDataToTempFile = async (
         worksheet.getCell("F55").value = `Page ${page + 1} of ${totalPages}`
 
         // Add items to the table
-        for (let s = 0; s < MAX_ITEMS_IN_PAGE; s++) {
-            const item = items[s]
+        for (let pageRow = 0; pageRow < totalItemsPerPage; pageRow++) {
+            const item = items[itemIndex]
             if (item === undefined) break
 
             const particular = item.size + " " + item.particulars
-            const row = s + CELL_OFFSET
+            const row = pageRow + ITEM_TABLE_START_OFFSET
 
-            worksheet.getCell(`A${row}`).value = `${slno}.`
-            worksheet.getCell(`A${row}`).style = det1Format
+            worksheet.getCell(`A${row}`).value = `${itemIndex + 1}.`
+            worksheet.getCell(`A${row}`).style = detailRightFormat
 
             worksheet.mergeCells(`B${row}:E${row}`)
             worksheet.getCell(`B${row}`).value = particular
             worksheet.getCell(`B${row}`).style = detFormat
 
             worksheet.getCell(`F${row}`).value = item.hsn
-            worksheet.getCell(`F${row}`).style = detcFormat
+            worksheet.getCell(`F${row}`).style = detailCenterFormat
 
             worksheet.getCell(`G${row}`).value = item.quantity
-            worksheet.getCell(`G${row}`).style = detcFormat
+            worksheet.getCell(`G${row}`).style = detailCenterFormat
 
             worksheet.getCell(`H${row}`).value = item.unit
-            worksheet.getCell(`H${row}`).style = detcFormat
+            worksheet.getCell(`H${row}`).style = detailCenterFormat
 
             worksheet.getCell(`I${row}`).value = item.rate
-            worksheet.getCell(`I${row}`).style = detcFormat
+            worksheet.getCell(`I${row}`).style = detailCenterFormat
 
             worksheet.getCell(`J${row}`).value = item.gst
-            worksheet.getCell(`J${row}`).style = detcFormat
+            worksheet.getCell(`J${row}`).style = detailCenterFormat
 
             const amount = item.quantity * item.rate
             worksheet.mergeCells(`K${row}:L${row}`)
             worksheet.getCell(`K${row}`).value = amount.toFixed(2)
-            worksheet.getCell(`K${row}`).style = det1Format
+            worksheet.getCell(`K${row}`).style = detailRightFormat
 
-            slno++
+            itemIndex++
+        }
+
+        // hsn table
+        {
+            const hsnStartRow =
+                ITEM_TABLE_START_OFFSET +
+                (MAX_ITEMS_IN_PAGE - (hsnTotals.length + 1))
+            // header
+            worksheet.mergeCells(hsnStartRow, 2, hsnStartRow, 3)
+            worksheet.getCell(hsnStartRow, 2).value = "HSN Code"
+            worksheet.getCell(hsnStartRow, 2).style = tableHeaderFormat
+
+            worksheet.getCell(hsnStartRow, 4).value = "GST"
+            worksheet.getCell(hsnStartRow, 4).style = tableHeaderFormat
+
+            worksheet.mergeCells(hsnStartRow, 5, hsnStartRow, 6)
+            worksheet.getCell(hsnStartRow, 5).value = "Taxable Value"
+            worksheet.getCell(hsnStartRow, 5).style = tableHeaderFormat
+
+            worksheet.mergeCells(hsnStartRow, 7, hsnStartRow, 8)
+            worksheet.getCell(hsnStartRow, 7).value = "Total Tax"
+            worksheet.getCell(hsnStartRow, 7).style = tableHeaderFormat
+
+            // rows
+            for (let i = 0; i < hsnTotals.length; i++) {
+                const [hsn, { gst, rate }] = hsnTotals[i]
+                // + 1 for title
+                const row = hsnStartRow + 1 + i
+
+                worksheet.mergeCells(row, 2, row, 3)
+                worksheet.getCell(row, 2).value = hsn
+                worksheet.getCell(row, 2).style = detailCenterFormat
+
+                worksheet.getCell(row, 4).value = `${gst}%`
+                worksheet.getCell(row, 4).style = detailCenterFormat
+
+                worksheet.mergeCells(row, 5, row, 6)
+                worksheet.getCell(row, 5).value = rate.toFixed(2)
+                worksheet.getCell(row, 5).style = detailRightFormat
+
+                worksheet.mergeCells(row, 7, row, 8)
+                worksheet.getCell(row, 7).value = (rate * (gst / 100)).toFixed(
+                    2,
+                )
+                worksheet.getCell(row, 7).style = detailRightFormat
+            }
         }
 
         if (page === totalPages - 1) {
@@ -399,26 +407,26 @@ export const fillDataToTempFile = async (
 
             worksheet.mergeCells("K38:L38")
             worksheet.getCell("K38").value = subtotal.toFixed(2)
-            worksheet.getCell("K38").style = det1Format
+            worksheet.getCell("K38").style = detailRightFormat
 
             worksheet.mergeCells("K45:L45")
             worksheet.getCell("K45").value = other.toFixed(2)
-            worksheet.getCell("K45").style = det1Format
+            worksheet.getCell("K45").style = detailRightFormat
 
             worksheet.mergeCells("K46:L46")
             worksheet.getCell("K46").value = roundoff.toFixed(2)
-            worksheet.getCell("K46").style = det1Format
+            worksheet.getCell("K46").style = detailRightFormat
 
             worksheet.mergeCells("K47:L47")
             worksheet.getCell("K47").value = roundedTotal.toFixed(2)
-            worksheet.getCell("K47").style = det1Format
+            worksheet.getCell("K47").style = detailRightFormat
 
             if (igst) {
                 // IGST uses only 1 row per Tax %
                 if (gst28 !== 0) {
                     worksheet.mergeCells("G39:H39")
                     worksheet.getCell("G39").value = total28.toFixed(2)
-                    worksheet.getCell("G39").style = det1Format
+                    worksheet.getCell("G39").style = detailRightFormat
 
                     worksheet.mergeCells("I39:J39")
                     worksheet.getCell("I39").value = " 28%  IGST"
@@ -426,13 +434,13 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("K39:L39")
                     worksheet.getCell("K39").value = gst28.toFixed(2)
-                    worksheet.getCell("K39").style = det1Format
+                    worksheet.getCell("K39").style = detailRightFormat
                 }
 
                 if (gst18 !== 0) {
                     worksheet.mergeCells("G40:H40")
                     worksheet.getCell("G40").value = total18.toFixed(2)
-                    worksheet.getCell("G40").style = det1Format
+                    worksheet.getCell("G40").style = detailRightFormat
 
                     worksheet.mergeCells("I40:J40")
                     worksheet.getCell("I40").value = " 18%  IGST"
@@ -440,13 +448,13 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("K40:L40")
                     worksheet.getCell("K40").value = gst18.toFixed(2)
-                    worksheet.getCell("K40").style = det1Format
+                    worksheet.getCell("K40").style = detailRightFormat
                 }
 
                 if (gst12 !== 0) {
                     worksheet.mergeCells("G41:H41")
                     worksheet.getCell("G41").value = total12.toFixed(2)
-                    worksheet.getCell("G41").style = det1Format
+                    worksheet.getCell("G41").style = detailRightFormat
 
                     worksheet.mergeCells("I41:J41")
                     worksheet.getCell("I41").value = " 12%  IGST"
@@ -454,7 +462,7 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("K41:L41")
                     worksheet.getCell("K41").value = gst12.toFixed(2)
-                    worksheet.getCell("K41").style = det1Format
+                    worksheet.getCell("K41").style = detailRightFormat
                 }
             } else {
                 // Non IGST uses normal 2 rows per tax %
@@ -464,11 +472,11 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("G43:H43")
                     worksheet.getCell("G43").value = t14.toFixed(2)
-                    worksheet.getCell("G43").style = det1Format
+                    worksheet.getCell("G43").style = detailRightFormat
 
                     worksheet.mergeCells("G44:H44")
                     worksheet.getCell("G44").value = t14.toFixed(2)
-                    worksheet.getCell("G44").style = det1Format
+                    worksheet.getCell("G44").style = detailRightFormat
 
                     worksheet.mergeCells("I43:J43")
                     worksheet.getCell("I43").value = " 14%  CGST"
@@ -480,11 +488,11 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("K43:L43")
                     worksheet.getCell("K43").value = st.toFixed(2)
-                    worksheet.getCell("K43").style = det1Format
+                    worksheet.getCell("K43").style = detailRightFormat
 
                     worksheet.mergeCells("K44:L44")
                     worksheet.getCell("K44").value = st.toFixed(2)
-                    worksheet.getCell("K44").style = det1Format
+                    worksheet.getCell("K44").style = detailRightFormat
                 }
 
                 if (gst18 !== 0) {
@@ -493,11 +501,11 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("G39:H39")
                     worksheet.getCell("G39").value = t9.toFixed(2)
-                    worksheet.getCell("G39").style = det1Format
+                    worksheet.getCell("G39").style = detailRightFormat
 
                     worksheet.mergeCells("G40:H40")
                     worksheet.getCell("G40").value = t9.toFixed(2)
-                    worksheet.getCell("G40").style = det1Format
+                    worksheet.getCell("G40").style = detailRightFormat
 
                     worksheet.mergeCells("I39:J39")
                     worksheet.getCell("I39").value = " 9%  CGST"
@@ -509,11 +517,11 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("K39:L39")
                     worksheet.getCell("K39").value = t.toFixed(2)
-                    worksheet.getCell("K39").style = det1Format
+                    worksheet.getCell("K39").style = detailRightFormat
 
                     worksheet.mergeCells("K40:L40")
                     worksheet.getCell("K40").value = t.toFixed(2)
-                    worksheet.getCell("K40").style = det1Format
+                    worksheet.getCell("K40").style = detailRightFormat
                 }
 
                 if (gst12 !== 0) {
@@ -522,11 +530,11 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("G41:H41")
                     worksheet.getCell("G41").value = t6.toFixed(2)
-                    worksheet.getCell("G41").style = det1Format
+                    worksheet.getCell("G41").style = detailRightFormat
 
                     worksheet.mergeCells("G42:H42")
                     worksheet.getCell("G42").value = t6.toFixed(2)
-                    worksheet.getCell("G42").style = det1Format
+                    worksheet.getCell("G42").style = detailRightFormat
 
                     worksheet.mergeCells("I41:J41")
                     worksheet.getCell("I41").value = " 6%  CGST"
@@ -538,11 +546,11 @@ export const fillDataToTempFile = async (
 
                     worksheet.mergeCells("K41:L41")
                     worksheet.getCell("K41").value = t.toFixed(2)
-                    worksheet.getCell("K41").style = det1Format
+                    worksheet.getCell("K41").style = detailRightFormat
 
                     worksheet.mergeCells("K42:L42")
                     worksheet.getCell("K42").value = t.toFixed(2)
-                    worksheet.getCell("K42").style = det1Format
+                    worksheet.getCell("K42").style = detailRightFormat
                 }
             }
         }
@@ -552,6 +560,46 @@ export const fillDataToTempFile = async (
     fs.writeFileSync(TEMPORARY_FILE_PATH, bufferToArrayBuffer(buffer))
     console.log("Temporary file saved successfully")
     return workbook
+}
+
+function bufferToArrayBuffer(buffer: Buffer) {
+    const arrayBuffer = new ArrayBuffer(buffer.length)
+    const view = new Uint8Array(arrayBuffer)
+    for (let i = 0; i < buffer.length; ++i) {
+        view[i] = buffer[i]
+    }
+    return view
+}
+
+const duplicateSheet = (
+    workbook: Workbook,
+    source: Worksheet,
+    name: string,
+) => {
+    const newWorksheet = workbook.addWorksheet(name)
+    // Copy Model
+    newWorksheet.model = Object.assign(
+        {},
+        {
+            ...source.model,
+            name,
+            ...{ model: { name } },
+        },
+    )
+    // Deep Copy Rows & Cells
+    source.eachRow((row, rowNumber) => {
+        const newRow = newWorksheet.getRow(rowNumber)
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            const newCell = newRow.getCell(colNumber)
+            newCell.value = cell.value
+            newCell.style = Object.assign({}, cell.style)
+        })
+    })
+    // Copy Merged Cells
+    source.model.merges.forEach((merge) => {
+        newWorksheet.mergeCells(merge)
+    })
+    return newWorksheet
 }
 
 const writeCopyNameToSheet = (sheet: Worksheet, copyName: string) => {
@@ -638,7 +686,11 @@ export const saveTempFileAndSchedulePrintJob = async (
 
 export const cleanupTempFiles = () => {
     fs.rm(TEMPORARY_FILE_PATH, (err) => {
-        console.error("unable to delete: ", err)
+        if (err) {
+            console.error("unable to delete temp file: ", err)
+        } else {
+            console.log("successfully deleted temp file.")
+        }
     })
 }
 

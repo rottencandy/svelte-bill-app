@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Item } from "./types"
-    import { MAX_ITEMS_IN_PAGE } from "./const"
+    import { calculatePages } from "./util"
 
     let {
         items,
@@ -16,8 +16,7 @@
 
     let copies = $state<1 | 2 | 3>(3)
 
-    // TODO this will be incorrect after adding hsn columns
-    const pages = $derived(Math.floor(items.length / MAX_ITEMS_IN_PAGE))
+    const pages = calculatePages(items)
 
     export const open = () => {
         element.showModal()

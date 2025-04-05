@@ -1,3 +1,4 @@
+import { MAX_ITEMS_IN_PAGE } from "./const"
 import { HsnTotal, Item } from "./types"
 
 export const calculateTotal = (items: Item[]) => {
@@ -49,3 +50,10 @@ export const calculateTotalsByHsn = (items: Item[]) =>
         hsnTotal.rate += item.rate * item.quantity
         return acc
     }, {})
+
+export const calculatePages = (items: Item[]) => {
+    const hsnTotals = Object.entries(calculateTotalsByHsn(items))
+    // gap for hsn rows + 1 for title
+    const totalItemsPerPage = MAX_ITEMS_IN_PAGE - (hsnTotals.length + 1)
+    return Math.ceil(items.length / totalItemsPerPage)
+}

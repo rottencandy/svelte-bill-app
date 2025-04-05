@@ -1,0 +1,5 @@
+- break down bill printer
+- better autocomplete dropdowns, with details
+- use env/config for variables
+- allow multiple simultaneous bills
+- toast notifications
