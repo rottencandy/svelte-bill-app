@@ -2,9 +2,9 @@ import { Workbook, type Worksheet, type Style } from "exceljs"
 import path from "path"
 import fs from "fs"
 import type { Bill, Item, Party } from "./types"
+import { MAX_ITEMS_IN_PAGE } from "./const"
 
 // Constants from your Python code (assuming these are defined elsewhere)
-export const MAX_ITEMS_IN_PAGE = 23
 const CELL_OFFSET = 14
 const bills_path = "." // Adjust this path as needed
 
