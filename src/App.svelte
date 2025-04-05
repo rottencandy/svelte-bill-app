@@ -105,7 +105,7 @@
         )
         incrementSavename()
         cleanupTempFiles()
-        resetApp()
+        resetAppState()
     }
 
     const handleSave = async () => {
@@ -113,7 +113,7 @@
         await saveTempToFile(wb, "Original Copy", `${billDetails.invoice}`)
         incrementSavename()
         cleanupTempFiles()
-        resetApp()
+        resetAppState()
     }
 
     const printBill = () => {
@@ -123,6 +123,26 @@
 
     const handlePartyDetailAutofill = () => {
         billDetailsElement.focus()
+    }
+
+    const resetAppState = () => {
+        partyDetails = {
+            name: "",
+            address: "",
+            tin: "",
+            privateMark: "",
+        }
+        billDetails = {
+            // get today in the format yyyy-mm-dd
+            date: new Date().toISOString().slice(0, 10),
+            invoice: getInvoiceNo(),
+            transport: "",
+            paymentTerms: "",
+            esugam: "",
+        }
+        items = []
+        useIGST = false
+        otherAmount = 0
     }
 </script>
 

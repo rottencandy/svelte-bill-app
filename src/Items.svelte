@@ -188,14 +188,16 @@
                 <button
                     onclick={() => editItem(index)}
                     class="bg-yellow-500 text-white px-4 py-1 rounded hover:bg-yellow-600"
+                    title="Edit entry"
                 >
-                    E
+                    🖉
                 </button>
                 <button
                     onclick={() => deleteItem(index)}
                     class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600"
+                    title="Delete entry"
                 >
-                    D
+                    ╳
                 </button>
             </div>
         </div>
