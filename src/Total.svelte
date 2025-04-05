@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { Item, Total } from "./types"
+    import HsnTotal from "./HsnTotal.svelte"
 
     let {
         items,
@@ -20,6 +21,7 @@
     const roundOff = $derived(Math.round(finalTotal))
 </script>
 
+<HsnTotal {items} />
 <div class="bg-gray-200 p-4 rounded grid grid-cols-2 gap-4 mb-6">
     <div class="flex justify-between items-center">
         <label>

@@ -1,4 +1,4 @@
-import { Item } from "./types"
+import { HsnTotal, Item } from "./types"
 
 export const calculateTotal = (items: Item[]) => {
     let sum = 0
@@ -38,3 +38,14 @@ export const calculateTotal = (items: Item[]) => {
         total28,
     }
 }
+
+export const calculateTotalsByHsn = (items: Item[]) =>
+    items.reduce<Record<string, HsnTotal>>((acc, item) => {
+        let hsnTotal = acc[item.hsn]
+        if (hsnTotal === undefined) {
+            hsnTotal = { rate: 0, gst: item.gst }
+            acc[item.hsn] = hsnTotal
+        }
+        hsnTotal.rate += item.rate * item.quantity
+        return acc
+    }, {})
