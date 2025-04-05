@@ -6,6 +6,7 @@
     import Total from "./Total.svelte"
     import PrintDialog from "./PrintDialog.svelte"
     import {
+    cleanupTempFiles,
         fillDataToTempFile,
         saveTempFileAndSchedulePrintJob,
         saveTempToFile,
@@ -103,12 +104,16 @@
             `${billDetails.invoice}`,
         )
         incrementSavename()
+        cleanupTempFiles()
+        resetApp()
     }
 
     const handleSave = async () => {
         const wb = await fillTempFile()
         await saveTempToFile(wb, "Original Copy", `${billDetails.invoice}`)
         incrementSavename()
+        cleanupTempFiles()
+        resetApp()
     }
 
     const printBill = () => {

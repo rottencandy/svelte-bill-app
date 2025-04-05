@@ -3,6 +3,7 @@ import path from "path"
 import fs from "fs"
 import type { Bill, Item, Party } from "./types"
 import { BASEPATH, MAX_ITEMS_IN_PAGE } from "./const"
+import { spawn } from "child_process"
 
 // Constants from your Python code (assuming these are defined elsewhere)
 const CELL_OFFSET = 14
@@ -621,18 +622,45 @@ export const saveTempFileAndSchedulePrintJob = async (
             })
             break
     }
+    const filePath = path.join(BILLS_PATH, `${fileName}.xlsx`)
     // save file
     fs.writeFileSync(
-        path.join(BILLS_PATH, `${fileName}.xlsx`),
+        filePath,
         bufferToArrayBuffer((await workbook.xlsx.writeBuffer()) as Buffer),
     )
     console.log(`${fileName}.xlsx saved successfully. Starting print job...`)
     // finally, schedule print job
-    // TODO
+    await sendPrintJob(filePath)
 }
 
 export const cleanupTempFiles = () => {
     fs.rm(TEMPORARY_FILE_PATH, (err) => {
         console.error("unable to delete: ", err)
+    })
+}
+
+const sendPrintJob = async (filePath: string) => {
+    return new Promise<void>((resolve) => {
+        // Spawn a new process to run the Python script
+        const pythonProcess = spawn("py", [
+            "print_bill.py",
+            filePath,
+        ])
+
+        // Handle output from the Python script
+        pythonProcess.stdout.on("data", (data: string) => {
+            console.log(`Script Output: ${data}`)
+        })
+
+        // Handle errors from the Python script
+        pythonProcess.stderr.on("data", (data) => {
+            console.error(`Script Error: ${data}`)
+        })
+
+        // Handle process exit
+        pythonProcess.on("close", (code) => {
+            console.log(`Script exited with code ${code}`)
+            resolve()
+        })
     })
 }
