@@ -1,12 +1,13 @@
 import { readFileSync, writeFileSync } from "fs"
+import path from "path"
 import { BASEPATH } from "./const"
 
-const baseDbPath = `${BASEPATH}/__database__`
-const pvtAddressPath = `${baseDbPath}/pvtaddresses.json`
-const addressesPath = `${baseDbPath}/addresses.json`
-const itemsPath = `${baseDbPath}/items.json`
-const unitsPath = `${baseDbPath}/units.json`
-const savenamePath = `${BASEPATH}/savename.txt`
+const baseDbPath = path.join(BASEPATH, "__database__")
+const pvtAddressPath = path.join(baseDbPath, "pvtaddresses.json")
+const addressesPath = path.join(baseDbPath, "addresses.json")
+const itemsPath = path.join(baseDbPath, "items.json")
+const unitsPath = path.join(baseDbPath, "units.json")
+const savenamePath = path.join(BASEPATH, "savename.txt")
 
 /** key, value paris of name to [address, tin], addresses.json */
 type Addresses = Record<string, [address: string, tin: string]>
@@ -78,6 +79,13 @@ export const setHsn = (item: string, hsn: string): void => {
     const items = getItems()
     items[item] = hsn
     writeFileSync(itemsPath, JSON.stringify(items))
+}
+
+/** Add unit to units list */
+export const setUnit = (unit: string): void => {
+    const units = getUnits()
+    units.push(unit)
+    writeFileSync(unitsPath, JSON.stringify(units))
 }
 
 export const incrementSavename = (): void => {

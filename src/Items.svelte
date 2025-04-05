@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Item } from "./types"
-    import { getItems, getUnits, setHsn } from "./database"
+    import { getItems, getUnits, setHsn, setUnit } from "./database"
 
     let { items = $bindable() }: { items: Item[] } = $props()
 
@@ -76,6 +76,12 @@
             setHsn(currentItem.particulars, currentItem.hsn)
         }
     }
+
+    const handleUnitBlur = () => {
+        if (currentItem.unit && !(currentItem.unit in units)) {
+            setUnit(currentItem.unit)
+        }
+    }
 </script>
 
 <div class="grid grid-cols-10 gap-2 mb-2 bg-blue-200 p-2">
@@ -132,6 +138,7 @@
         type="text"
         name="unit"
         bind:value={currentItem.unit}
+        onblur={handleUnitBlur}
         class="p-1 border rounded"
         list="units"
     />

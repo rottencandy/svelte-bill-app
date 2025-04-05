@@ -5,8 +5,12 @@
     import Items from "./Items.svelte"
     import Total from "./Total.svelte"
     import PrintDialog from "./PrintDialog.svelte"
-    import { fillAllData } from "./billprinter"
-    import { getInvoiceNo } from "./database"
+    import {
+        fillDataToTempFile,
+        saveTempFileAndSchedulePrintJob,
+        saveTempToFile,
+    } from "./billprinter"
+    import { getInvoiceNo, incrementSavename } from "./database"
 
     let printDialogElement: any
     let billDetailsElement: any
@@ -74,8 +78,8 @@
         total.sum + total.gst12 + total.gst18 + total.gst28 + otherAmount,
     )
 
-    const fillAndClose = () => {
-        fillAllData(
+    const fillTempFile = () =>
+        fillDataToTempFile(
             partyDetails,
             billDetails,
             items,
@@ -90,18 +94,24 @@
             total.total18,
             total.total28,
         )
+
+    const handlePrint = async (copies: 1 | 2 | 3) => {
+        const wb = await fillTempFile()
+        await saveTempFileAndSchedulePrintJob(
+            wb,
+            copies,
+            `${billDetails.invoice}`,
+        )
+        incrementSavename()
     }
 
-    const finalPrint = (copies: number) => {
-        fillAndClose()
-    }
-
-    const finalSave = (copies: number) => {
-        fillAndClose()
+    const handleSave = async () => {
+        const wb = await fillTempFile()
+        await saveTempToFile(wb, "Original Copy", `${billDetails.invoice}`)
+        incrementSavename()
     }
 
     const printBill = () => {
-        // TODO print logic would go here
         console.log("Printing bill...")
         printDialogElement.open()
     }
@@ -147,8 +157,8 @@
         <PrintDialog
             bind:this={printDialogElement}
             {items}
-            onSave={finalSave}
-            onPrint={finalPrint}
+            onSave={handleSave}
+            onPrint={handlePrint}
         />
     </div>
 </main>

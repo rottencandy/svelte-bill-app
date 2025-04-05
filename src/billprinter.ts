@@ -2,24 +2,138 @@ import { Workbook, type Worksheet, type Style } from "exceljs"
 import path from "path"
 import fs from "fs"
 import type { Bill, Item, Party } from "./types"
-import { MAX_ITEMS_IN_PAGE } from "./const"
+import { BASEPATH, MAX_ITEMS_IN_PAGE } from "./const"
 
 // Constants from your Python code (assuming these are defined elsewhere)
 const CELL_OFFSET = 14
-const bills_path = "." // Adjust this path as needed
+const BILLS_PATH = path.join(BASEPATH, "saved_bills")
+const TEMPORARY_FILE_PATH = path.join(BILLS_PATH, "unformatted.xlsx")
 
-// Helper function to add border
-function addBorder(
-    worksheet: Worksheet,
-    startRow: number,
-    endRow: number,
-    startCol: number,
-    emptyBorder: Style,
-) {
-    for (let i = startRow; i < endRow; i++) {
-        worksheet.getCell(startCol, i).value = ""
-        worksheet.getCell(startCol, i).style = emptyBorder
-    }
+// Create formats (styles)
+const headFormat: Partial<Style> = {
+    alignment: { horizontal: "center", vertical: "middle" },
+    font: { bold: true, size: 12, underline: "single" },
+}
+
+const titleFormat: Partial<Style> = {
+    alignment: { horizontal: "center", vertical: "middle" },
+    font: {
+        bold: true,
+        name: "Arial",
+        italic: true,
+        size: 26,
+        color: { argb: "FF000000" },
+    },
+}
+
+const subtitleFormat: Partial<Style> = {
+    alignment: { horizontal: "center", vertical: "middle" },
+    font: { bold: true, name: "Calibri", italic: true },
+}
+
+const tableHeaderFormat: Partial<Style> = {
+    alignment: { horizontal: "left", vertical: "middle" },
+    font: { bold: true, name: "Calibri", size: 12 },
+    border: {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+    },
+    fill: {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFFFF00" },
+    },
+}
+
+const subtitleAddrFormat: Partial<Style> = {
+    alignment: { horizontal: "center", vertical: "middle" },
+    font: { bold: true, name: "Times New Roman", size: 12 },
+}
+
+const detFormat: Partial<Style> = {
+    alignment: { horizontal: "left", vertical: "middle", wrapText: true },
+    font: { bold: true, name: "Courier New", size: 12 },
+}
+
+// Adjust font size for detFormat
+const smallDetFormat: Partial<Style> = {
+    ...detFormat,
+    font: { ...detFormat.font, size: 10 },
+}
+
+const monoBillDetailsFmt: Partial<Style> = {
+    alignment: { horizontal: "left", vertical: "middle", wrapText: true },
+    font: { bold: true, name: "Courier New", size: 13 },
+}
+
+const det1Format: Partial<Style> = {
+    alignment: { horizontal: "right", vertical: "middle", wrapText: true },
+    font: { bold: true, name: "Courier New", size: 14 },
+}
+
+const detcFormat: Partial<Style> = {
+    alignment: { horizontal: "center", vertical: "middle", wrapText: true },
+    font: { bold: true, name: "Courier New", size: 14 },
+}
+
+const tncTitleFormat: Partial<Style> = {
+    alignment: { horizontal: "left", vertical: "middle", wrapText: true },
+    font: { bold: true, name: "Calibri", size: 8 },
+}
+
+const tncFormat: Partial<Style> = {
+    alignment: { horizontal: "left", vertical: "middle", wrapText: true },
+    font: { name: "Calibri", size: 8 },
+}
+
+const phFormat: Partial<Style> = {
+    alignment: { horizontal: "right", vertical: "middle", wrapText: true },
+    font: { bold: true },
+}
+
+const tinFormat: Partial<Style> = {
+    alignment: { horizontal: "left" },
+    font: { bold: true },
+}
+
+const thinBorder: Partial<Style["border"]> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+}
+
+const duplicateSheet = (
+    workbook: Workbook,
+    source: Worksheet,
+    name: string,
+) => {
+    const newWorksheet = workbook.addWorksheet(name)
+    // Copy Model
+    newWorksheet.model = Object.assign(
+        {},
+        {
+            ...source.model,
+            name,
+            ...{ model: { name } },
+        },
+    )
+    // Deep Copy Rows & Cells
+    source.eachRow((row, rowNumber) => {
+        const newRow = newWorksheet.getRow(rowNumber)
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            const newCell = newRow.getCell(colNumber)
+            newCell.value = cell.value
+            newCell.style = Object.assign({}, cell.style)
+        })
+    })
+    // Copy Merged Cells
+    source.model.merges.forEach((merge) => {
+        newWorksheet.mergeCells(merge)
+    })
+    return newWorksheet
 }
 
 function bufferToArrayBuffer(buffer: Buffer) {
@@ -31,7 +145,8 @@ function bufferToArrayBuffer(buffer: Buffer) {
     return view
 }
 
-export const fillAllData = async (
+/** Fill and save all data to a temporary `unformatted.xlsx` workbook */
+export const fillDataToTempFile = async (
     partyDetails: Party,
     billDetails: Bill,
     items: Item[],
@@ -48,117 +163,17 @@ export const fillAllData = async (
 ) => {
     // Create a new workbook
     const workbook = new Workbook()
-    const filePath = path.join(bills_path, "unformatted.xlsx")
-
-    // Create formats (styles)
-    const headFormat = {
-        alignment: { horizontal: "center", vertical: "middle" },
-        font: { bold: true, size: 12, underline: "single" },
-    } as const
-
-    const titleFormat = {
-        alignment: { horizontal: "center", vertical: "middle" },
-        font: {
-            bold: true,
-            name: "Arial",
-            italic: true,
-            size: 26,
-            color: { argb: "FF000000" },
-        },
-    } as const
-
-    const subtitleFormat = {
-        alignment: { horizontal: "center", vertical: "middle" },
-        font: { bold: true, name: "Calibri", italic: true },
-    } as const
-
-    const tableHeaderFormat = {
-        alignment: { horizontal: "left", vertical: "middle" },
-        font: { bold: true, name: "Calibri", size: 12 },
-        border: {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-        },
-        fill: {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF00" },
-        },
-    } as const
-
-    const subtitleAddrFormat = {
-        alignment: { horizontal: "center", vertical: "middle" },
-        font: { bold: true, name: "Times New Roman", size: 12 },
-    } as const
-
-    const detFormat = {
-        alignment: { horizontal: "left", vertical: "middle" },
-        font: { bold: true, name: "Courier New", size: 12 },
-        wrapText: true,
-    } as const
-
-    const monoBillDetailsFmt = {
-        alignment: { horizontal: "left", vertical: "middle" },
-        font: { bold: true, name: "Courier New", size: 13 },
-        wrapText: true,
-    } as const
-
-    const det1Format = {
-        alignment: { horizontal: "right", vertical: "middle" },
-        font: { bold: true, name: "Courier New", size: 14 },
-        wrapText: true,
-    } as const
-
-    const detcFormat = {
-        alignment: { horizontal: "center", vertical: "middle" },
-        font: { bold: true, name: "Courier New", size: 14 },
-        wrapText: true,
-    } as const
-
-    const tncTitleFormat = {
-        alignment: { horizontal: "left", vertical: "middle" },
-        font: { bold: true, name: "Calibri", size: 8 },
-        wrapText: true,
-    }
-
-    const tncFormat = {
-        alignment: { horizontal: "left", vertical: "middle" },
-        font: { name: "Calibri", size: 8 },
-        wrapText: true,
-    } as const
-
-    const phFormat = {
-        alignment: { horizontal: "right", vertical: "middle" },
-        font: { bold: true },
-        wrapText: true,
-    } as const
-
-    const tinFormat = {
-        alignment: { horizontal: "left" },
-        font: { bold: true },
-    } as const
-
-    const emptyBorder = {
-        border: {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-        },
-    }
 
     const partyNameAddr = partyDetails.name + "\n" + partyDetails.address
-    const nameAddrFmt = {
-        alignment: { horizontal: "left", vertical: "middle" },
+    const nameAddrFmt: Partial<Style> = {
+        alignment: { horizontal: "left", vertical: "middle", wrapText: true },
         font: {
             bold: true,
             name: "Courier New",
+            // set size depending on address height
             size: partyNameAddr.split("\n").length > 3 ? 10 : 12,
         },
-        wrapText: true,
-    } as const
+    }
 
     const partyTin = "GSTIN : " + partyDetails.tin
     const details =
@@ -173,6 +188,7 @@ export const fillAllData = async (
         "\nESUGAM No.    :" +
         billDetails.esugam
 
+    // TODO update this after adding hsn columns
     const totalPages = Math.ceil(items.length / MAX_ITEMS_IN_PAGE)
     let slno = 1
 
@@ -293,12 +309,6 @@ export const fillAllData = async (
             },
         }
 
-        // Adjust font size for detFormat
-        const smallDetFormat = {
-            ...detFormat,
-            font: { ...detFormat.font, size: 10 },
-        }
-
         worksheet.mergeCells("J48:L52")
         worksheet.getCell("J48").value =
             "POPULAR ENTERPRISE\n\n\n\nAuthorised Signatory"
@@ -380,8 +390,8 @@ export const fillAllData = async (
             worksheet.getCell("G47").value = "Total"
             worksheet.getCell("G47").style = detFormat
 
-            const totalr = parseFloat(total.toFixed(0))
-            const roundoff = total - totalr
+            const roundedTotal = parseFloat(total.toFixed(0))
+            const roundoff = Math.abs(total - roundedTotal)
 
             worksheet.mergeCells("K38:L38")
             worksheet.getCell("K38").value = subtotal.toFixed(2)
@@ -396,7 +406,7 @@ export const fillAllData = async (
             worksheet.getCell("K46").style = det1Format
 
             worksheet.mergeCells("K47:L47")
-            worksheet.getCell("K47").value = totalr.toFixed(2)
+            worksheet.getCell("K47").value = roundedTotal.toFixed(2)
             worksheet.getCell("K47").style = det1Format
 
             if (igst) {
@@ -534,7 +544,95 @@ export const fillAllData = async (
         }
     }
 
-    const buffer = await workbook.xlsx.writeBuffer()
-    fs.writeFileSync(filePath, bufferToArrayBuffer(buffer as Buffer))
-    console.log("Excel file created successfully")
+    const buffer = (await workbook.xlsx.writeBuffer()) as Buffer
+    fs.writeFileSync(TEMPORARY_FILE_PATH, bufferToArrayBuffer(buffer))
+    console.log("Temporary file saved successfully")
+    return workbook
+}
+
+const writeCopyNameToSheet = (sheet: Worksheet, copyName: string) => {
+    for (let i = 3; i < 6; i++) {
+        sheet.getCell(13, i).border = thinBorder
+    }
+    for (let i = 11; i < 13; i++) {
+        sheet.getCell(13, i).border = thinBorder
+    }
+    sheet.getCell("I1").value = copyName
+}
+
+export const saveTempToFile = async (
+    /** the workbook */
+    workbook: Workbook,
+    /** copy name to write at the top (ex. duplicate copy) */
+    copyName: string,
+    /** file name to save as, without extension */
+    fileName: string,
+) => {
+    workbook.eachSheet((sheet) => writeCopyNameToSheet(sheet, copyName))
+
+    fs.writeFileSync(
+        path.join(BILLS_PATH, `${fileName}.xlsx`),
+        bufferToArrayBuffer((await workbook.xlsx.writeBuffer()) as Buffer),
+    )
+    console.log(`${fileName}.xlsx saved successfully`)
+}
+
+export const saveTempFileAndSchedulePrintJob = async (
+    /** the workbook */
+    workbook: Workbook,
+    /** number of copies (original, duplicate, triplicate) */
+    copies: 1 | 2 | 3,
+    /** file name to save as, without extension */
+    fileName: string,
+) => {
+    // add extra copies as needed to temporary file
+    switch (copies) {
+        case 1:
+            workbook.eachSheet((sheet) =>
+                writeCopyNameToSheet(sheet, "Original Copy"),
+            )
+            break
+        case 2:
+            workbook.eachSheet((sheet) => {
+                const dupsheet = duplicateSheet(
+                    workbook,
+                    sheet,
+                    `${sheet.name}-dup`,
+                )
+                writeCopyNameToSheet(sheet, "Original Copy")
+                writeCopyNameToSheet(dupsheet, "Duplicate Copy")
+            })
+            break
+        case 3:
+            workbook.eachSheet((sheet) => {
+                const dupsheet = duplicateSheet(
+                    workbook,
+                    sheet,
+                    `${sheet.name}-dup`,
+                )
+                const tripsheet = duplicateSheet(
+                    workbook,
+                    sheet,
+                    `${sheet.name}-trip`,
+                )
+                writeCopyNameToSheet(sheet, "Original Copy")
+                writeCopyNameToSheet(dupsheet, "Duplicate Copy")
+                writeCopyNameToSheet(tripsheet, "Triplicate Copy")
+            })
+            break
+    }
+    // save file
+    fs.writeFileSync(
+        path.join(BILLS_PATH, `${fileName}.xlsx`),
+        bufferToArrayBuffer((await workbook.xlsx.writeBuffer()) as Buffer),
+    )
+    console.log(`${fileName}.xlsx saved successfully. Starting print job...`)
+    // finally, schedule print job
+    // TODO
+}
+
+export const cleanupTempFiles = () => {
+    fs.rm(TEMPORARY_FILE_PATH, (err) => {
+        console.error("unable to delete: ", err)
+    })
 }
