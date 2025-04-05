@@ -6,6 +6,10 @@
     import Total from "./Total.svelte"
     import PrintDialog from "./PrintDialog.svelte"
     import { fillAllData } from "./billprinter"
+    import { getInvoiceNo } from "./database"
+
+    let printDialogElement: any
+    let billDetailsElement: any
 
     let partyDetails = $state<Party>({
         name: "",
@@ -16,8 +20,7 @@
     let billDetails = $state<Bill>({
         // get today in the format yyyy-mm-dd
         date: new Date().toISOString().slice(0, 10),
-        // TODO set from db
-        invoice: 0,
+        invoice: getInvoiceNo(),
         transport: "",
         paymentTerms: "",
         esugam: "",
@@ -25,7 +28,6 @@
     let items = $state<Item[]>([])
     let useIGST = $state(false)
     let otherAmount = $state(0)
-    let dialog: any
 
     const total = $derived.by(() => {
         let sum = 0
@@ -101,7 +103,11 @@
     const printBill = () => {
         // TODO print logic would go here
         console.log("Printing bill...")
-        dialog.open()
+        printDialogElement.open()
+    }
+
+    const handlePartyDetailAutofill = () => {
+        billDetailsElement.focus()
     }
 </script>
 
@@ -112,8 +118,14 @@
         </h1>
 
         <div class="flex mb-6 gap-4">
-            <PartyDetails bind:party={partyDetails} />
-            <BillDetails bind:bill={billDetails} />
+            <PartyDetails
+                bind:party={partyDetails}
+                onautofill={handlePartyDetailAutofill}
+            />
+            <BillDetails
+                bind:this={billDetailsElement}
+                bind:bill={billDetails}
+            />
         </div>
 
         <div class="border p-4 rounded mb-6">
@@ -133,7 +145,7 @@
         </div>
 
         <PrintDialog
-            bind:this={dialog}
+            bind:this={printDialogElement}
             {items}
             onSave={finalSave}
             onPrint={finalPrint}

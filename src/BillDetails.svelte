@@ -2,6 +2,12 @@
     import type { Bill } from "./types"
 
     let { bill = $bindable() }: { bill: Bill } = $props()
+
+    let transportField: HTMLInputElement
+
+    export const focus = () => {
+        transportField.focus()
+    }
 </script>
 
 <div class="flex-1 border p-4 rounded">
@@ -36,6 +42,7 @@
             >Transport
             <input
                 type="text"
+                bind:this={transportField}
                 bind:value={bill.transport}
                 class="w-full p-2 border rounded"
             />

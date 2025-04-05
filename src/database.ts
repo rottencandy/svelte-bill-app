@@ -6,7 +6,7 @@ const pvtAddressPath = `${baseDbPath}/pvtaddresses.json`
 const addressesPath = `${baseDbPath}/addresses.json`
 const itemsPath = `${baseDbPath}/items.json`
 const unitsPath = `${baseDbPath}/units.json`
-const savenamePath = `${baseDbPath}/savename.txt`
+const savenamePath = `${BASEPATH}/savename.txt`
 
 /** key, value paris of name to [address, tin], addresses.json */
 type Addresses = Record<string, [address: string, tin: string]>

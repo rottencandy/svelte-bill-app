@@ -1,18 +1,22 @@
 <script lang="ts">
+    import type {
+        FocusEventHandler,
+        KeyboardEventHandler,
+    } from "svelte/elements"
     import type { Party } from "./types"
+    import {
+        getAllPvtMarks,
+        getNameByPvt,
+        getPartyDetails,
+        setPartyDetails,
+    } from "./database"
 
-    let { party = $bindable() }: { party: Party } = $props()
+    let {
+        party = $bindable(),
+        onautofill,
+    }: { party: Party; onautofill: () => void } = $props()
 
-    const handlePrivateMarkSearch = () => {
-        // Simulate database lookup
-        // if (partyDetails.privateMark in database.get_all_pvtmark()) {
-        //     const pname = database.get_name_bypvt(partyDetails.privateMark);
-        //     partyDetails.name = pname;
-        //     const [add, tn] = database.has_name(pname);
-        //     partyDetails.address = add;
-        //     partyDetails.tin = tn;
-        // }
-    }
+    const pvtnames = getAllPvtMarks()
 
     const savePartyDetails = () => {
         //if (!partyDetails.name) {
@@ -31,6 +35,35 @@
         // }
         // Focus would move to particulars in original
     }
+
+    const handlePvtBlur: FocusEventHandler<HTMLInputElement> = (e) => {
+        // check and autofill party details
+        const name = getNameByPvt(party.privateMark)
+        if (name !== undefined) {
+            party.name = name
+            const details = getPartyDetails(name)
+            if (details !== undefined) {
+                e.preventDefault()
+                const [address, tin] = details
+                party.address = address
+                party.tin = tin
+                onautofill()
+            }
+        }
+        // else if name doesn't exist in pvt, let user fill it up
+    }
+
+    const handleGstinBlur: FocusEventHandler<HTMLInputElement> = (e) => {
+        // save party details if filled
+        if (party.name && (party.address || party.tin)) {
+            setPartyDetails(
+                party.name,
+                party.address,
+                party.tin,
+                party.privateMark,
+            )
+        }
+    }
 </script>
 
 <!-- Party Details Section -->
@@ -42,11 +75,18 @@
             >Private Mark
             <input
                 type="text"
+                placeholder="Type to search..."
                 bind:value={party.privateMark}
+                onblur={handlePvtBlur}
                 class="w-full p-2 border rounded"
-                required
-            /></label
-        >
+                list="pvt-names"
+            />
+            <datalist id="pvt-names">
+                {#each pvtnames as pvt}
+                    <option value={pvt}></option>
+                {/each}
+            </datalist>
+        </label>
     </div>
 
     <div class="mb-2">
@@ -78,6 +118,7 @@
             <input
                 type="text"
                 bind:value={party.tin}
+                onblur={handleGstinBlur}
                 class="w-full p-2 border rounded"
                 required
             /></label

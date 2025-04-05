@@ -1,8 +1,6 @@
 <script lang="ts">
     import type { Item } from "./types"
-
-    // TODO move to consts
-    const MAX_ITEMS_IN_PAGE = 23
+    import { MAX_ITEMS_IN_PAGE } from "./const"
 
     let {
         items,
@@ -30,7 +28,10 @@
     }
 </script>
 
-<dialog class="backdrop:bg-gray-700/50 m-auto" bind:this={element}>
+<dialog
+    class="backdrop:bg-gray-700/50 m-auto rounded border"
+    bind:this={element}
+>
     <div class="flex justify-center flex-col w-150 m-4 p-3 rounded">
         <div class="mb-2 text-center">
             {items.length} items entered. Bill will span {pages} page(s).
@@ -53,7 +54,7 @@
                 onclick={() => onSave(copies)}>Save</button
             >
             <button
-                class="bg-green-500 text-white p-1 rounded hover:bg-green-600"
+                class="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600"
                 onclick={close}>Cancel</button
             >
         </div>
