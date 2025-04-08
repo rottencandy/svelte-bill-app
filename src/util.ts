@@ -57,3 +57,23 @@ export const calculatePages = (items: Item[]) => {
     const totalItemsPerPage = MAX_ITEMS_IN_PAGE - (hsnTotals.length + 1)
     return Math.ceil(items.length / totalItemsPerPage)
 }
+
+/** Convert date to desired string format */
+export const dateToString = (date: Date) => {
+    const monthAbbrs = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
+    const month = monthAbbrs[date.getMonth()]
+    return `${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`
+}

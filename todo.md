@@ -3,3 +3,4 @@
 - use env/config for variables
 - allow multiple simultaneous bills
 - toast notifications
+- warn on unsaved changes/data overwrites

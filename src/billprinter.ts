@@ -4,7 +4,7 @@ import fs from "fs"
 import type { Bill, Item, Party, Total } from "./types"
 import { BASEPATH, MAX_ITEMS_IN_PAGE } from "./const"
 import { spawn } from "child_process"
-import { calculatePages, calculateTotalsByHsn } from "./util"
+import { calculatePages, calculateTotalsByHsn, dateToString } from "./util"
 
 const ITEM_TABLE_START_OFFSET = 14
 const BILLS_PATH = path.join(BASEPATH, "saved_bills")
@@ -146,7 +146,7 @@ export const fillDataToTempFile = async (
         "Invoice No.   :" +
         billDetails.invoice +
         "\nDate          :" +
-        billDetails.date +
+        dateToString(new Date(billDetails.date)) +
         "\nTransport     :" +
         billDetails.transport +
         "\nPayment Terms :" +
