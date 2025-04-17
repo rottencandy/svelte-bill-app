@@ -1,8 +1,5 @@
 <script lang="ts">
-    import type {
-        FocusEventHandler,
-        KeyboardEventHandler,
-    } from "svelte/elements"
+    import type { FocusEventHandler } from "svelte/elements"
     import type { Party } from "./types"
     import {
         getAllPvtMarks,
@@ -10,31 +7,16 @@
         getPartyDetails,
         setPartyDetails,
     } from "./database"
+    import { onMount } from "svelte"
+    import autocomplete from "autocompleter"
 
     let {
         party = $bindable(),
         onautofill,
     }: { party: Party; onautofill: () => void } = $props()
 
+    let pvtField: HTMLInputElement
     const pvtnames = getAllPvtMarks()
-
-    const savePartyDetails = () => {
-        //if (!partyDetails.name) {
-        //    if (partyDetails.privateMark) {
-        //        handlePrivateMarkSearch();
-        //    } else {
-        //        alert('Some fields are empty.');
-        //    }
-        //    return;
-        //}
-        // Simulate database operations
-        // if (database.has_name(partyDetails.name)) {
-        //     // Update logic
-        // } else {
-        //     // Create new entry
-        // }
-        // Focus would move to particulars in original
-    }
 
     const handlePvtBlur: FocusEventHandler<HTMLInputElement> = (e) => {
         // check and autofill party details
@@ -53,7 +35,7 @@
         // else if name doesn't exist in pvt, let user fill it up
     }
 
-    const handleGstinBlur: FocusEventHandler<HTMLInputElement> = (e) => {
+    const handleGstinBlur: FocusEventHandler<HTMLInputElement> = () => {
         // save party details if filled
         if (party.name && (party.address || party.tin)) {
             setPartyDetails(
@@ -64,6 +46,28 @@
             )
         }
     }
+
+    onMount(() => {
+        // unit field
+        autocomplete({
+            input: pvtField,
+            showOnFocus: true,
+            minLength: 0,
+            fetch: (input, update) => {
+                const text = input.toLowerCase()
+                const suggestions = pvtnames
+                    .filter((n) => n.toLowerCase().includes(text))
+                    .map((n) => ({ label: n, value: n }))
+                update(suggestions)
+            },
+            onSelect: (item) => {
+                if (item.label !== undefined) {
+                    party.privateMark = item.label
+                    pvtField.blur()
+                }
+            },
+        })
+    })
 </script>
 
 <!-- Party Details Section -->
@@ -77,9 +81,10 @@
                 type="text"
                 placeholder="Type to search..."
                 bind:value={party.privateMark}
+                bind:this={pvtField}
                 onblur={handlePvtBlur}
                 class="w-full p-2 border rounded"
-                list="pvt-names"
+                autocomplete="off"
             />
             <datalist id="pvt-names">
                 {#each pvtnames as pvt}

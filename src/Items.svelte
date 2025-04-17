@@ -1,11 +1,16 @@
 <script lang="ts">
+    import autocomplete from "autocompleter"
     import type { Item } from "./types"
     import { getItems, getUnits, setHsn, setUnit } from "./database"
+    import { onMount } from "svelte"
 
     let { items = $bindable() }: { items: Item[] } = $props()
 
     let nameField: HTMLInputElement
+    let sizeField: HTMLInputElement
     let quantityField: HTMLInputElement
+    let unitField: HTMLInputElement
+    let rateField: HTMLInputElement
     const itemDetails = getItems()
     const itemNames = Object.keys(itemDetails)
     const units = getUnits()
@@ -84,6 +89,47 @@
             setUnit(currentItem.unit)
         }
     }
+
+    onMount(() => {
+        // name field
+        autocomplete({
+            input: nameField,
+            showOnFocus: true,
+            minLength: 0,
+            fetch: (input, update) => {
+                const text = input.toLowerCase()
+                const suggestions = itemNames
+                    .filter((n) => n.toLowerCase().includes(text))
+                    .map((n) => ({ label: n, value: n }))
+                update(suggestions)
+            },
+            onSelect: (item) => {
+                if (item.label !== undefined) {
+                    currentItem.particulars = item.label
+                    sizeField.focus()
+                }
+            },
+        })
+        // unit field
+        autocomplete({
+            input: unitField,
+            showOnFocus: true,
+            minLength: 0,
+            fetch: (input, update) => {
+                const text = input.toLowerCase()
+                const suggestions = units
+                    .filter((n) => n.toLowerCase().includes(text))
+                    .map((n) => ({ label: n, value: n }))
+                update(suggestions)
+            },
+            onSelect: (item) => {
+                if (item.label !== undefined) {
+                    currentItem.unit = item.label
+                    rateField.focus()
+                }
+            },
+        })
+    })
 </script>
 
 <div class="grid grid-cols-10 gap-2 mb-2 bg-blue-200 p-2">
@@ -105,20 +151,16 @@
         type="text"
         name="particulars"
         placeholder="Type to search..."
+        autocomplete="off"
         bind:value={currentItem.particulars}
         bind:this={nameField}
         onblur={handleNameBlur}
         class="p-1 border rounded col-span-2"
-        list="item-names"
     />
-    <datalist id="item-names">
-        {#each itemNames as name}
-            <option value={name}></option>
-        {/each}
-    </datalist>
     <input
         type="text"
         name="size"
+        bind:this={sizeField}
         bind:value={currentItem.size}
         onblur={handleSizeBlur}
         class="p-1 border rounded"
@@ -140,19 +182,16 @@
     <input
         type="text"
         name="unit"
+        bind:this={unitField}
         bind:value={currentItem.unit}
         onblur={handleUnitBlur}
         class="p-1 border rounded"
-        list="units"
+        autocomplete="off"
     />
-    <datalist id="units">
-        {#each units as unit}
-            <option value={unit}></option>
-        {/each}
-    </datalist>
     <input
         type="number"
         name="rate"
+        bind:this={rateField}
         bind:value={currentItem.rate}
         class="p-1 border rounded"
     />

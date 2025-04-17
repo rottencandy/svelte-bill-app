@@ -1,7 +1,33 @@
 /* index.css */
-@import 'tailwindcss';
+@import "tailwindcss";
 
 body {
     margin: 0;
     padding: 0;
+}
+
+/*
+required for autocomplete.js
+https://github.com/denis-taran/autocomplete/blob/bddb6fae45bf29c5af37ea14cc5744f475036d2f/autocomplete.css
+*/
+.autocomplete {
+    background: white;
+    z-index: 10;
+    overflow: auto;
+    box-sizing: border-box;
+    border: 1px solid rgba(50, 50, 50, 0.6);
+
+    & > div {
+        padding: 0 4px;
+    }
+
+    & .group {
+        background: #eee;
+    }
+
+    & > div:hover:not(.group),
+    & > div.selected {
+        background: #81ca91;
+        cursor: pointer;
+    }
 }
