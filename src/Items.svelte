@@ -68,8 +68,8 @@
 
     const handleSizeBlur = () => {
         // hsn already filled, can be skipped
-        if (currentItem.hsn) {
-            //quantityField.focus()
+        if (currentItem.hsn.length > 0) {
+            quantityField.focus()
         }
     }
 
