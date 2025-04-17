@@ -1,3 +1,3 @@
 @echo off
-cd \d "Z:\new-app\"
-C:\Users\mdsau\Downloads\nwjs\nw.exe .
+cd \d "D:\svelte-bill-app"
+D:\nwjs\nw.exe .
