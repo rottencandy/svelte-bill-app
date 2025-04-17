@@ -51,11 +51,19 @@ export const calculateTotalsByHsn = (items: Item[]) =>
         return acc
     }, {})
 
-export const calculatePages = (items: Item[]) => {
+const calculateItemsPerPage = (items: Item[], hsnLength: number) => {
     const hsnTotals = Object.entries(calculateTotalsByHsn(items))
     // gap for hsn rows + 1 for title
-    const totalItemsPerPage = MAX_ITEMS_IN_PAGE - (hsnTotals.length + 1)
-    return Math.ceil(items.length / totalItemsPerPage)
+    return MAX_ITEMS_IN_PAGE - (hsnTotals.length + 1)
+}
+
+export const calculatePages = (
+    items: Item[],
+): { pages: number; itemsPerPage: number } => {
+    const hsnTotals = Object.entries(calculateTotalsByHsn(items))
+    // gap for hsn rows + 1 for title
+    const itemsPerPage = calculateItemsPerPage(items, hsnTotals.length)
+    return { pages: Math.ceil(items.length / itemsPerPage), itemsPerPage }
 }
 
 /** Convert date to desired string format */

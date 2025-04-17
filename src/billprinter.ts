@@ -154,11 +154,10 @@ export const fillDataToTempFile = async (
         "\nESUGAM No.    :" +
         billDetails.esugam
 
-    const totalItemsPerPage = calculatePages(items)
-    const totalPages = Math.ceil(items.length / totalItemsPerPage)
+    const {pages: pagesCount, itemsPerPage} = calculatePages(items)
     let itemIndex = 0
 
-    for (let page = 0; page < totalPages; page++) {
+    for (let page = 0; page < pagesCount; page++) {
         const worksheet = workbook.addWorksheet(`Page ${page + 1}`)
 
         // Worksheet settings
@@ -298,10 +297,10 @@ export const fillDataToTempFile = async (
         worksheet.getCell("B45").style = detFormat
 
         worksheet.mergeCells("F55:G52")
-        worksheet.getCell("F55").value = `Page ${page + 1} of ${totalPages}`
+        worksheet.getCell("F55").value = `Page ${page + 1} of ${pagesCount}`
 
         // Add items to the table
-        for (let pageRow = 0; pageRow < totalItemsPerPage; pageRow++) {
+        for (let pageRow = 0; pageRow < itemsPerPage; pageRow++) {
             const item = items[itemIndex]
             if (item === undefined) break
 
@@ -384,7 +383,7 @@ export const fillDataToTempFile = async (
             }
         }
 
-        if (page === totalPages - 1) {
+        if (page === pagesCount - 1) {
             // Print totals in last page
             worksheet.mergeCells("I38:J38")
             worksheet.getCell("I38").value = " Sub Total"
