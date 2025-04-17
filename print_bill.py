@@ -5,7 +5,7 @@ import win32com.client as win32
 from openpyxl import load_workbook
 from argparse import ArgumentParser
 
-BASEPATH = 'Z:\\new-app'
+BASEPATH = 'D:\\svelte-bill-app'
 
 def print_file(filepath):
     wob = load_workbook(filepath)
