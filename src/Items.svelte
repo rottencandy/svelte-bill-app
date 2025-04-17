@@ -11,9 +11,11 @@
     let quantityField: HTMLInputElement
     let unitField: HTMLInputElement
     let rateField: HTMLInputElement
-    const itemDetails = getItems()
-    const itemNames = Object.keys(itemDetails)
-    const units = getUnits()
+
+    let itemDetails = $state.raw(getItems())
+    let units = $state.raw(getUnits())
+
+    const itemNames = $derived(Object.keys(itemDetails))
 
     const getDefault = () => ({
         particulars: "",
@@ -81,12 +83,17 @@
     const handleHsnBlur = () => {
         if (currentItem.particulars && currentItem.hsn) {
             setHsn(currentItem.particulars, currentItem.hsn)
+            itemDetails = {
+                ...itemDetails,
+                [currentItem.particulars]: currentItem.hsn,
+            }
         }
     }
 
     const handleUnitBlur = () => {
         if (currentItem.unit && !(currentItem.unit in units)) {
             setUnit(currentItem.unit)
+            units = [...units, currentItem.unit]
         }
     }
 

@@ -16,7 +16,7 @@
     }: { party: Party; onautofill: () => void } = $props()
 
     let pvtField: HTMLInputElement
-    const pvtnames = getAllPvtMarks()
+    let pvtnames = $state.raw(getAllPvtMarks())
 
     const handlePvtBlur: FocusEventHandler<HTMLInputElement> = (e) => {
         // check and autofill party details
@@ -44,6 +44,7 @@
                 party.tin,
                 party.privateMark,
             )
+            pvtnames = [...pvtnames, party.privateMark]
         }
     }
 
