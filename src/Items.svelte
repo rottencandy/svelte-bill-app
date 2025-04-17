@@ -4,6 +4,7 @@
 
     let { items = $bindable() }: { items: Item[] } = $props()
 
+    let nameField: HTMLInputElement
     let quantityField: HTMLInputElement
     const itemDetails = getItems()
     const itemNames = Object.keys(itemDetails)
@@ -36,6 +37,7 @@
         items = [...items, { ...currentItem }]
         // Reset current item
         currentItem = getDefault()
+        nameField.focus()
     }
 
     const editItem = (index: number) => {
@@ -104,6 +106,7 @@
         name="particulars"
         placeholder="Type to search..."
         bind:value={currentItem.particulars}
+        bind:this={nameField}
         onblur={handleNameBlur}
         class="p-1 border rounded col-span-2"
         list="item-names"
