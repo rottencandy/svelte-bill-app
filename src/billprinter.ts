@@ -34,20 +34,21 @@ export const fillDataToTempFile = async (
 
     // Create a new workbook
     const workbook = new Workbook()
+    const { hsnLines, totalPages } = calculatePages(items)
 
-    const { pages: pagesCount, itemsPerPage } = calculatePages(items)
+    // sanity check
+    if (hsnLines > MAX_ITEMS_IN_PAGE) {
+        throw new Error("HSN Table larger than page!")
+    }
+
     let itemIndex = 0
-
-    for (let page = 0; page < pagesCount; page++) {
+    for (let page = 0; page < totalPages; page++) {
         const worksheet = workbook.addWorksheet(`Page ${page + 1}`)
-        applyBaseLayout(worksheet)
+        applyBaseLayout(worksheet, page, totalPages)
         fillPartyAndBillDetails(worksheet, partyDetails, billDetails)
 
-        worksheet.mergeCells("F55:G52")
-        worksheet.getCell("F55").value = `Page ${page + 1} of ${pagesCount}`
-
         // Add items to the table
-        for (let pageRow = 0; pageRow < itemsPerPage; pageRow++) {
+        for (let pageRow = 0; pageRow < MAX_ITEMS_IN_PAGE; pageRow++) {
             const item = items[itemIndex]
             if (item === undefined) break
             const row = pageRow + ITEM_TABLE_START_OFFSET
@@ -55,23 +56,22 @@ export const fillDataToTempFile = async (
             itemIndex++
         }
 
-        // hsn table
-        {
-            const hsnStartRow =
-                ITEM_TABLE_START_OFFSET +
-                (MAX_ITEMS_IN_PAGE - (hsnTotals.length + 1))
-            fillHsnHeader(worksheet, hsnStartRow)
+        // this is the last page
+        if (page === totalPages - 1) {
+            // hsn table
+            {
+                const hsnStartRow =
+                    ITEM_TABLE_START_OFFSET + (MAX_ITEMS_IN_PAGE - hsnLines)
+                fillHsnHeader(worksheet, hsnStartRow, igst)
 
-            // rows
-            for (let i = 0; i < hsnTotals.length; i++) {
-                const [hsn, { gst, rate }] = hsnTotals[i]
-                // + 1 for title
-                const row = hsnStartRow + 1 + i
-                fillHsnRow(worksheet, hsn, gst, rate, row)
+                // rows
+                for (let i = 0; i < hsnTotals.length; i++) {
+                    const [hsn, { gst, rate }] = hsnTotals[i]
+                    // + 1 for title
+                    const row = hsnStartRow + 1 + i
+                    fillHsnRow(worksheet, hsn, gst, rate, row, igst)
+                }
             }
-        }
-
-        if (page === pagesCount - 1) {
             // Print totals in last page
             fillTotalsSection(worksheet, total, finalTotal, other, igst)
         }

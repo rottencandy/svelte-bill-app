@@ -11,6 +11,7 @@ import {
     SUBTITLE_FMT,
     TABLE_HEADER_FMT,
     THIN_BORDER,
+    THIN_BORDER_TOP,
     TIN_FMT,
     TITLE_FMT,
     TNC_FMT,
@@ -35,13 +36,25 @@ import {
 } from "./data"
 import { Bill, Gst, Item, Party, Total } from "src/types"
 
-export const applyBaseLayout = (sheet: Worksheet) => {
+export const applyBaseLayout = (
+    sheet: Worksheet,
+    page: number,
+    pagesCount: number,
+) => {
     // Worksheet settings
     sheet.pageSetup.fitToPage = true
     sheet.pageSetup.fitToWidth = 1
     sheet.pageSetup.fitToHeight = 1
     sheet.pageSetup.horizontalCentered = true
     sheet.pageSetup.verticalCentered = true
+    sheet.pageSetup.margins = {
+        left: 0.2,
+        right: 0.2,
+        top: 0.2,
+        bottom: 0.2,
+        header: 0.1,
+        footer: 0.1,
+    }
 
     // Set column widths
     sheet.getColumn(1).width = 6 // Column A (sl. no.)
@@ -108,13 +121,35 @@ export const applyBaseLayout = (sheet: Worksheet) => {
     sheet.getCell("K13").value = "Amount"
     sheet.getCell("K13").style = TABLE_HEADER_FMT
 
+    // page divider
+    sheet.mergeCells(39, 1, 39, 12)
+    sheet.getCell(39, 1).border = THIN_BORDER_TOP
+
     // Static bill info at bottom
-    sheet.mergeCells("B47:F51")
-    sheet.getCell("B47").value = ""
-    sheet.getCell("B47").style = DETAIL_FMT
+    // Bank
+    sheet.mergeCells("A45:F45")
+    sheet.getCell("A45").value = BANK_LINE_1
+    sheet.getCell("A45").style = DETAIL_FMT
+
+    sheet.mergeCells("A46:F46")
+    sheet.getCell("A46").value = BANK_LINE_2
+    sheet.getCell("A46").style = DETAIL_FMT
+
+    sheet.mergeCells("A47:F47")
+    sheet.getCell("A47").value = BANK_LINE_3
+    sheet.getCell("A47").style = DETAIL_FMT
+
+    sheet.mergeCells("A48:F48")
+    sheet.getCell("A48").value = BANK_LINE_4
+    sheet.getCell("A48").style = DETAIL_FMT
+
+    // T & C
+    sheet.mergeCells(50, 1, 54, 6)
+    sheet.getCell(50, 1).value = ""
+    sheet.getCell(50, 1).style = DETAIL_FMT
 
     // Rich text for terms and conditions
-    const termsCell = sheet.getCell("B47")
+    const termsCell = sheet.getCell(50, 1)
     termsCell.value = {
         richText: [
             {
@@ -129,25 +164,14 @@ export const applyBaseLayout = (sheet: Worksheet) => {
     }
     termsCell.style = TNC_FMT
 
-    sheet.mergeCells("J48:L52")
-    sheet.getCell("J48").value = SIGNATORY_DATA
-    sheet.getCell("J48").style = SMALL_DETAIL_FMT
+    // Signature
+    sheet.mergeCells("J50:L54")
+    sheet.getCell("J50").value = SIGNATORY_DATA
+    sheet.getCell("J50").style = SMALL_DETAIL_FMT
 
-    sheet.mergeCells("B42:F42")
-    sheet.getCell("B42").value = BANK_LINE_1
-    sheet.getCell("B42").style = DETAIL_FMT
-
-    sheet.mergeCells("B43:F43")
-    sheet.getCell("B43").value = BANK_LINE_2
-    sheet.getCell("B43").style = DETAIL_FMT
-
-    sheet.mergeCells("B44:F44")
-    sheet.getCell("B44").value = BANK_LINE_3
-    sheet.getCell("B44").style = DETAIL_FMT
-
-    sheet.mergeCells("B45:F45")
-    sheet.getCell("B45").value = BANK_LINE_4
-    sheet.getCell("B45").style = DETAIL_FMT
+    // page number
+    sheet.mergeCells(55, 6, 55, 7)
+    sheet.getCell(55, 6).value = `Page ${page + 1} of ${pagesCount}`
 }
 
 export const fillPartyAndBillDetails = (
@@ -216,44 +240,62 @@ export const fillItemRow = (
     sheet.getCell(`K${row}`).style = DETAIL_RIGHT_FMT
 }
 
+export const fillHsnHeader = (sheet: Worksheet, row: number, igst: boolean) => {
+    sheet.getCell(row, 1).value = "HSN Code"
+    sheet.getCell(row, 1).style = TABLE_HEADER_FMT
+    sheet.mergeCells(row, 1, row, 2)
+
+    sheet.getCell(row, 3).value = "Taxable Value"
+    sheet.getCell(row, 3).style = TABLE_HEADER_FMT
+    sheet.mergeCells(row, 3, row, 4)
+
+    if (igst) {
+        sheet.getCell(row, 5).value = "IGST"
+        sheet.getCell(row, 5).style = TABLE_HEADER_FMT
+        sheet.mergeCells(row, 5, row, 7)
+    } else {
+        sheet.getCell(row, 5).value = "CGST"
+        sheet.getCell(row, 5).style = TABLE_HEADER_FMT
+        sheet.mergeCells(row, 5, row, 7)
+
+        sheet.getCell(row, 8).value = "SGST"
+        sheet.getCell(row, 8).style = TABLE_HEADER_FMT
+        sheet.mergeCells(row, 8, row, 10)
+    }
+}
+
 export const fillHsnRow = (
     sheet: Worksheet,
     hsn: string,
     gst: Gst,
     rate: number,
     row: number,
+    igst: boolean,
 ) => {
-    sheet.mergeCells(row, 2, row, 3)
-    sheet.getCell(row, 2).value = hsn
-    sheet.getCell(row, 2).style = DETAIL_CENTER_FMT
+    const total = rate * (gst / 100)
+    const halfTotal = total / 2
+    const halfGst = gst / 2
+    sheet.getCell(row, 1).value = hsn
+    sheet.getCell(row, 1).style = DETAIL_CENTER_FMT
+    sheet.mergeCells(row, 1, row, 2)
 
-    sheet.getCell(row, 4).value = `${gst}%`
-    sheet.getCell(row, 4).style = DETAIL_CENTER_FMT
+    sheet.getCell(row, 3).value = rate.toFixed(2)
+    sheet.getCell(row, 3).style = DETAIL_RIGHT_FMT
+    sheet.mergeCells(row, 3, row, 4)
 
-    sheet.mergeCells(row, 5, row, 6)
-    sheet.getCell(row, 5).value = rate.toFixed(2)
-    sheet.getCell(row, 5).style = DETAIL_RIGHT_FMT
+    if (igst) {
+        sheet.getCell(row, 5).value = `${gst}% ${total.toFixed(2)}`
+        sheet.getCell(row, 5).style = DETAIL_RIGHT_FMT
+        sheet.mergeCells(row, 5, row, 7)
+    } else {
+        sheet.getCell(row, 5).value = `${halfGst}% ${halfTotal.toFixed(2)}`
+        sheet.getCell(row, 5).style = DETAIL_RIGHT_FMT
+        sheet.mergeCells(row, 5, row, 7)
 
-    sheet.mergeCells(row, 7, row, 8)
-    sheet.getCell(row, 7).value = (rate * (gst / 100)).toFixed(2)
-    sheet.getCell(row, 7).style = DETAIL_RIGHT_FMT
-}
-
-export const fillHsnHeader = (sheet: Worksheet, row: number) => {
-    sheet.mergeCells(row, 2, row, 3)
-    sheet.getCell(row, 2).value = "HSN Code"
-    sheet.getCell(row, 2).style = TABLE_HEADER_FMT
-
-    sheet.getCell(row, 4).value = "GST"
-    sheet.getCell(row, 4).style = TABLE_HEADER_FMT
-
-    sheet.mergeCells(row, 5, row, 6)
-    sheet.getCell(row, 5).value = "Taxable Value"
-    sheet.getCell(row, 5).style = TABLE_HEADER_FMT
-
-    sheet.mergeCells(row, 7, row, 8)
-    sheet.getCell(row, 7).value = "Total Tax"
-    sheet.getCell(row, 7).style = TABLE_HEADER_FMT
+        sheet.getCell(row, 8).value = `${halfGst}% ${halfTotal.toFixed(2)}`
+        sheet.getCell(row, 8).style = DETAIL_RIGHT_FMT
+        sheet.mergeCells(row, 8, row, 10)
+    }
 }
 
 export const fillTotalsSection = (
@@ -273,83 +315,83 @@ export const fillTotalsSection = (
         total28,
     } = total
 
-    sheet.mergeCells("I38:J38")
-    sheet.getCell("I38").value = " Sub Total"
-    sheet.getCell("I38").style = DETAIL_FMT
+    sheet.mergeCells("I40:J40")
+    sheet.getCell("I40").value = " Sub Total"
+    sheet.getCell("I40").style = DETAIL_FMT
 
-    sheet.mergeCells("G45:J45")
-    sheet.getCell("G45").value = "Other Amount"
-    sheet.getCell("G45").style = DETAIL_FMT
+    sheet.mergeCells("H47:J47")
+    sheet.getCell("H47").value = "Other Amount"
+    sheet.getCell("H47").style = DETAIL_FMT
 
-    sheet.mergeCells("G46:J46")
-    sheet.getCell("G46").value = "Round Off"
-    sheet.getCell("G46").style = DETAIL_FMT
+    sheet.mergeCells("H48:J48")
+    sheet.getCell("H48").value = "Round Off"
+    sheet.getCell("H48").style = DETAIL_FMT
 
-    sheet.mergeCells("G47:J47")
-    sheet.getCell("G47").value = "Total"
-    sheet.getCell("G47").style = DETAIL_FMT
+    sheet.mergeCells("H49:J49")
+    sheet.getCell("H49").value = "Invoice Value"
+    sheet.getCell("H49").style = DETAIL_FMT
 
     const roundedTotal = parseFloat(finalTotal.toFixed(0))
     const roundoff = Math.abs(finalTotal - roundedTotal)
 
-    sheet.mergeCells("K38:L38")
-    sheet.getCell("K38").value = subtotal.toFixed(2)
-    sheet.getCell("K38").style = DETAIL_RIGHT_FMT
-
-    sheet.mergeCells("K45:L45")
-    sheet.getCell("K45").value = other.toFixed(2)
-    sheet.getCell("K45").style = DETAIL_RIGHT_FMT
-
-    sheet.mergeCells("K46:L46")
-    sheet.getCell("K46").value = roundoff.toFixed(2)
-    sheet.getCell("K46").style = DETAIL_RIGHT_FMT
+    sheet.mergeCells("K40:L40")
+    sheet.getCell("K40").value = subtotal.toFixed(2)
+    sheet.getCell("K40").style = DETAIL_RIGHT_FMT
 
     sheet.mergeCells("K47:L47")
-    sheet.getCell("K47").value = roundedTotal.toFixed(2)
+    sheet.getCell("K47").value = other.toFixed(2)
     sheet.getCell("K47").style = DETAIL_RIGHT_FMT
+
+    sheet.mergeCells("K48:L48")
+    sheet.getCell("K48").value = roundoff.toFixed(2)
+    sheet.getCell("K48").style = DETAIL_RIGHT_FMT
+
+    sheet.mergeCells("K49:L49")
+    sheet.getCell("K49").value = roundedTotal.toFixed(2)
+    sheet.getCell("K49").style = DETAIL_RIGHT_FMT
 
     if (igst) {
         // IGST uses only 1 row per Tax %
         if (gst28 !== 0) {
-            sheet.mergeCells("G39:H39")
-            sheet.getCell("G39").value = total28.toFixed(2)
-            sheet.getCell("G39").style = DETAIL_RIGHT_FMT
-
-            sheet.mergeCells("I39:J39")
-            sheet.getCell("I39").value = " 28%  IGST"
-            sheet.getCell("I39").style = DETAIL_FMT
-
-            sheet.mergeCells("K39:L39")
-            sheet.getCell("K39").value = gst28.toFixed(2)
-            sheet.getCell("K39").style = DETAIL_RIGHT_FMT
-        }
-
-        if (gst18 !== 0) {
-            sheet.mergeCells("G40:H40")
-            sheet.getCell("G40").value = total18.toFixed(2)
-            sheet.getCell("G40").style = DETAIL_RIGHT_FMT
-
-            sheet.mergeCells("I40:J40")
-            sheet.getCell("I40").value = " 18%  IGST"
-            sheet.getCell("I40").style = DETAIL_FMT
-
-            sheet.mergeCells("K40:L40")
-            sheet.getCell("K40").value = gst18.toFixed(2)
-            sheet.getCell("K40").style = DETAIL_RIGHT_FMT
-        }
-
-        if (gst12 !== 0) {
             sheet.mergeCells("G41:H41")
-            sheet.getCell("G41").value = total12.toFixed(2)
+            sheet.getCell("G41").value = total28.toFixed(2)
             sheet.getCell("G41").style = DETAIL_RIGHT_FMT
 
             sheet.mergeCells("I41:J41")
-            sheet.getCell("I41").value = " 12%  IGST"
+            sheet.getCell("I41").value = " 28% IGST"
             sheet.getCell("I41").style = DETAIL_FMT
 
             sheet.mergeCells("K41:L41")
-            sheet.getCell("K41").value = gst12.toFixed(2)
+            sheet.getCell("K41").value = gst28.toFixed(2)
             sheet.getCell("K41").style = DETAIL_RIGHT_FMT
+        }
+
+        if (gst18 !== 0) {
+            sheet.mergeCells("G42:H42")
+            sheet.getCell("G42").value = total18.toFixed(2)
+            sheet.getCell("G42").style = DETAIL_RIGHT_FMT
+
+            sheet.mergeCells("I42:J42")
+            sheet.getCell("I42").value = " 18% IGST"
+            sheet.getCell("I42").style = DETAIL_FMT
+
+            sheet.mergeCells("K42:L42")
+            sheet.getCell("K42").value = gst18.toFixed(2)
+            sheet.getCell("K42").style = DETAIL_RIGHT_FMT
+        }
+
+        if (gst12 !== 0) {
+            sheet.mergeCells("G43:H43")
+            sheet.getCell("G43").value = total12.toFixed(2)
+            sheet.getCell("G43").style = DETAIL_RIGHT_FMT
+
+            sheet.mergeCells("I43:J43")
+            sheet.getCell("I43").value = " 12% IGST"
+            sheet.getCell("I43").style = DETAIL_FMT
+
+            sheet.mergeCells("K43:L43")
+            sheet.getCell("K43").value = gst12.toFixed(2)
+            sheet.getCell("K43").style = DETAIL_RIGHT_FMT
         }
     } else {
         // Non IGST uses normal 2 rows per tax %
@@ -357,78 +399,49 @@ export const fillTotalsSection = (
             const t14 = total28 / 2
             const st = gst28 / 2
 
-            sheet.mergeCells("G43:H43")
-            sheet.getCell("G43").value = t14.toFixed(2)
-            sheet.getCell("G43").style = DETAIL_RIGHT_FMT
+            sheet.mergeCells("G45:H45")
+            sheet.getCell("G45").value = t14.toFixed(2)
+            sheet.getCell("G45").style = DETAIL_RIGHT_FMT
 
-            sheet.mergeCells("G44:H44")
-            sheet.getCell("G44").value = t14.toFixed(2)
-            sheet.getCell("G44").style = DETAIL_RIGHT_FMT
+            sheet.mergeCells("G46:H46")
+            sheet.getCell("G46").value = t14.toFixed(2)
+            sheet.getCell("G46").style = DETAIL_RIGHT_FMT
 
-            sheet.mergeCells("I43:J43")
-            sheet.getCell("I43").value = " 14%  CGST"
-            sheet.getCell("I43").style = DETAIL_FMT
+            sheet.mergeCells("I45:J45")
+            sheet.getCell("I45").value = "14% CGST"
+            sheet.getCell("I45").style = DETAIL_FMT
 
-            sheet.mergeCells("I44:J44")
-            sheet.getCell("I44").value = " 14%  SGST"
-            sheet.getCell("I44").style = DETAIL_FMT
+            sheet.mergeCells("I46:J46")
+            sheet.getCell("I46").value = "14% SGST"
+            sheet.getCell("I46").style = DETAIL_FMT
 
-            sheet.mergeCells("K43:L43")
-            sheet.getCell("K43").value = st.toFixed(2)
-            sheet.getCell("K43").style = DETAIL_RIGHT_FMT
+            sheet.mergeCells("K45:L45")
+            sheet.getCell("K45").value = st.toFixed(2)
+            sheet.getCell("K45").style = DETAIL_RIGHT_FMT
 
-            sheet.mergeCells("K44:L44")
-            sheet.getCell("K44").value = st.toFixed(2)
-            sheet.getCell("K44").style = DETAIL_RIGHT_FMT
+            sheet.mergeCells("K46:L46")
+            sheet.getCell("K46").value = st.toFixed(2)
+            sheet.getCell("K46").style = DETAIL_RIGHT_FMT
         }
 
         if (gst18 !== 0) {
             const t9 = total18 / 2
             const t = gst18 / 2
 
-            sheet.mergeCells("G39:H39")
-            sheet.getCell("G39").value = t9.toFixed(2)
-            sheet.getCell("G39").style = DETAIL_RIGHT_FMT
-
-            sheet.mergeCells("G40:H40")
-            sheet.getCell("G40").value = t9.toFixed(2)
-            sheet.getCell("G40").style = DETAIL_RIGHT_FMT
-
-            sheet.mergeCells("I39:J39")
-            sheet.getCell("I39").value = " 9%  CGST"
-            sheet.getCell("I39").style = DETAIL_FMT
-
-            sheet.mergeCells("I40:J40")
-            sheet.getCell("I40").value = " 9%  SGST"
-            sheet.getCell("I40").style = DETAIL_FMT
-
-            sheet.mergeCells("K39:L39")
-            sheet.getCell("K39").value = t.toFixed(2)
-            sheet.getCell("K39").style = DETAIL_RIGHT_FMT
-
-            sheet.mergeCells("K40:L40")
-            sheet.getCell("K40").value = t.toFixed(2)
-            sheet.getCell("K40").style = DETAIL_RIGHT_FMT
-        }
-
-        if (gst12 !== 0) {
-            const t6 = total12 / 2
-            const t = gst12 / 2
-
             sheet.mergeCells("G41:H41")
-            sheet.getCell("G41").value = t6.toFixed(2)
+            sheet.getCell("G41").value = t9.toFixed(2)
             sheet.getCell("G41").style = DETAIL_RIGHT_FMT
 
             sheet.mergeCells("G42:H42")
-            sheet.getCell("G42").value = t6.toFixed(2)
+            sheet.getCell("G42").value = t9.toFixed(2)
             sheet.getCell("G42").style = DETAIL_RIGHT_FMT
 
             sheet.mergeCells("I41:J41")
-            sheet.getCell("I41").value = " 6%  CGST"
+            sheet.getCell("I41").value = " 9% CGST"
             sheet.getCell("I41").style = DETAIL_FMT
 
             sheet.mergeCells("I42:J42")
-            sheet.getCell("I42").value = " 6%  SGST"
+            sheet.getCell("I42").value = " 9% SGST"
             sheet.getCell("I42").style = DETAIL_FMT
 
             sheet.mergeCells("K41:L41")
@@ -438,6 +451,35 @@ export const fillTotalsSection = (
             sheet.mergeCells("K42:L42")
             sheet.getCell("K42").value = t.toFixed(2)
             sheet.getCell("K42").style = DETAIL_RIGHT_FMT
+        }
+
+        if (gst12 !== 0) {
+            const t6 = total12 / 2
+            const t = gst12 / 2
+
+            sheet.mergeCells("G43:H43")
+            sheet.getCell("G43").value = t6.toFixed(2)
+            sheet.getCell("G43").style = DETAIL_RIGHT_FMT
+
+            sheet.mergeCells("G44:H44")
+            sheet.getCell("G44").value = t6.toFixed(2)
+            sheet.getCell("G44").style = DETAIL_RIGHT_FMT
+
+            sheet.mergeCells("I43:J43")
+            sheet.getCell("I43").value = " 6% CGST"
+            sheet.getCell("I43").style = DETAIL_FMT
+
+            sheet.mergeCells("I44:J44")
+            sheet.getCell("I44").value = " 6% SGST"
+            sheet.getCell("I44").style = DETAIL_FMT
+
+            sheet.mergeCells("K43:L43")
+            sheet.getCell("K43").value = t.toFixed(2)
+            sheet.getCell("K43").style = DETAIL_RIGHT_FMT
+
+            sheet.mergeCells("K44:L44")
+            sheet.getCell("K44").value = t.toFixed(2)
+            sheet.getCell("K44").style = DETAIL_RIGHT_FMT
         }
     }
 }
@@ -449,5 +491,5 @@ export const writeCopyNameToSheet = (sheet: Worksheet, copyName: string) => {
     for (let i = 11; i < 13; i++) {
         sheet.getCell(13, i).border = THIN_BORDER
     }
-    sheet.getCell("I1").value = copyName
+    sheet.getCell(1, 9).value = copyName
 }

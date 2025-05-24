@@ -16,7 +16,7 @@
 
     let copies = $state<1 | 2 | 3>(3)
 
-    const pages = calculatePages(items)
+    const { totalPages } = $derived(calculatePages(items))
 
     export const open = () => {
         element.showModal()
@@ -33,7 +33,7 @@
 >
     <div class="flex justify-center flex-col w-150 m-4 p-3 rounded">
         <div class="mb-2 text-center">
-            {items.length} items entered. Bill will span {pages} page(s).
+            {items.length} items entered. Bill will span {totalPages} page(s).
         </div>
         <label class="block rounded mb-2 text-center">
             Number of copies:

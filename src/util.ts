@@ -53,11 +53,23 @@ export const calculateTotalsByHsn = (items: Item[]) =>
 
 export const calculatePages = (
     items: Item[],
-): { pages: number; itemsPerPage: number } => {
-    const hsnTotals = Object.entries(calculateTotalsByHsn(items))
-    // gap for hsn rows + 1 for title
-    const itemsPerPage = MAX_ITEMS_IN_PAGE - (hsnTotals.length + 1)
-    return { pages: Math.ceil(items.length / itemsPerPage), itemsPerPage }
+): {
+    totalPages: number
+    hsnLines: number
+} => {
+    const pages = Math.ceil(items.length / MAX_ITEMS_IN_PAGE)
+    // +1 for hsn table header
+    const hsnLines = Object.entries(calculateTotalsByHsn(items)).length + 1
+
+    const linesInLastPage = items.length % MAX_ITEMS_IN_PAGE
+    const emptyLinesInLastPage = MAX_ITEMS_IN_PAGE - linesInLastPage
+    // add extra page if hsn table cannot fit in last page
+    const totalPages = emptyLinesInLastPage >= hsnLines ? pages : pages + 1
+
+    return {
+        totalPages,
+        hsnLines,
+    }
 }
 
 /** Convert date to desired string format */

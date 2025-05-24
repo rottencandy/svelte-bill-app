@@ -177,14 +177,14 @@
         name="hsn"
         onblur={handleHsnBlur}
         bind:value={currentItem.hsn}
-        class="p-1 border rounded"
+        class="p-1 border rounded text-right"
     />
     <input
         type="number"
         name="quantity"
         bind:this={quantityField}
         bind:value={currentItem.quantity}
-        class="p-1 border rounded"
+        class="p-1 border rounded text-right"
     />
     <input
         type="text"
@@ -200,9 +200,13 @@
         name="rate"
         bind:this={rateField}
         bind:value={currentItem.rate}
-        class="p-1 border rounded"
+        class="p-1 border rounded text-right"
     />
-    <select class="p-1 border rounded" name="gst" bind:value={currentItem.gst}>
+    <select
+        class="p-1 border rounded text-right"
+        name="gst"
+        bind:value={currentItem.gst}
+    >
         <option value={12}>12</option>
         <option value={18}>18</option>
         <option value={28}>28</option>
@@ -225,12 +229,12 @@
         >
             <div class="col-span-2">{item.particulars}</div>
             <div>{item.size}</div>
-            <div>{item.hsn}</div>
-            <div>{item.quantity}</div>
-            <div>{item.unit}</div>
-            <div>{item.rate}</div>
-            <div>{item.gst}%</div>
-            <div>
+            <div class="text-right">{item.hsn}</div>
+            <div class="text-right">{item.quantity}</div>
+            <div class="text-right">{item.unit}</div>
+            <div class="text-right">{item.rate}</div>
+            <div class="text-right">{item.gst}%</div>
+            <div class="text-right">
                 {(item.quantity * item.rate).toFixed(2)}
             </div>
             <div class="flex gap-2">

@@ -74,7 +74,7 @@
     <div class="font-bold">Total</div>
     <div class="text-right">{finalTotal.toFixed(2)}</div>
 
-    <div class="font-bold">Round off</div>
+    <div class="font-bold">Invoice Value</div>
     <div class="text-right">{roundOff.toFixed(2)}</div>
 </div>
 

@@ -74,7 +74,7 @@ export const TNC_FMT: Partial<Style> = {
 
 export const PH_FMT: Partial<Style> = {
     alignment: { horizontal: "right", vertical: "middle", wrapText: true },
-    font: { bold: true, size: 10 },
+    font: { bold: true, size: 9 },
 }
 
 export const TIN_FMT: Partial<Style> = {
@@ -87,4 +87,8 @@ export const THIN_BORDER: Partial<Style["border"]> = {
     left: { style: "thin" },
     bottom: { style: "thin" },
     right: { style: "thin" },
+}
+
+export const THIN_BORDER_TOP: Partial<Style["border"]> = {
+    top: { style: "thin" },
 }

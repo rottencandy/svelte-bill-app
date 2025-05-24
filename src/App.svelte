@@ -122,7 +122,7 @@
         </div>
 
         <div class="border p-4 rounded mb-6">
-            <h2 class="font-bold mb-2">Items</h2>
+            <h2 class="font-bold mb-2">Items ({items.length})</h2>
             <Items bind:items />
         </div>
 
