@@ -19,7 +19,7 @@ const ctx = await esbuild.context({
                 {
                     filename: "index.html",
                     entryPoints: ["src/app.ts", "src/global.css"],
-                    title: "APP",
+                    title: "BILL APP 2.0",
                     htmlTemplate: "src/index.html",
                 },
             ],
