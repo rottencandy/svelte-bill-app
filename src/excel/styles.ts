@@ -74,7 +74,7 @@ export const TNC_FMT: Partial<Style> = {
 
 export const PH_FMT: Partial<Style> = {
     alignment: { horizontal: "right", vertical: "middle", wrapText: true },
-    font: { bold: true },
+    font: { bold: true, size: 10 },
 }
 
 export const TIN_FMT: Partial<Style> = {

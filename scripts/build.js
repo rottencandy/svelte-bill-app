@@ -9,7 +9,7 @@ const ctx = await esbuild.context({
     metafile: true,
     charset: "utf8",
     format: "iife",
-    external: ["fs", "path", "stream", "child_process"],
+    external: ["fs", "path", "stream", "child_process", "events", "util"],
     outdir: "app",
     loader: { ".png": "dataurl" },
     assetNames: "[name]",
