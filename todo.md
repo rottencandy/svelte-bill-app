@@ -4,3 +4,5 @@
 - allow multiple simultaneous bills
 - toast notifications
 - warn on unsaved changes/data overwrites
+- logging, error reports
+- use numbers for row, col in excel
