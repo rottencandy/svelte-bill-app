@@ -62,9 +62,19 @@ export const DETAIL_RIGHT_FMT: Partial<Style> = {
     font: { ...DETAIL_FMT.font, size: 14 },
 }
 
+export const HSN_ROW_RIGHT_FMT: Partial<Style> = {
+    ...DETAIL_RIGHT_FMT,
+    font: { ...DETAIL_RIGHT_FMT.font, size: 12 },
+}
+
 export const DETAIL_CENTER_FMT: Partial<Style> = {
     alignment: { horizontal: "center", vertical: "middle", wrapText: true },
     font: { ...DETAIL_FMT.font, size: 14 },
+}
+
+export const HSN_ROW_CENTER_FMT: Partial<Style> = {
+    ...DETAIL_CENTER_FMT,
+    font: { ...DETAIL_CENTER_FMT.font, size: 12 },
 }
 
 export const TNC_FMT: Partial<Style> = {

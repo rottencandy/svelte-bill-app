@@ -4,6 +4,8 @@ import {
     DETAIL_FMT,
     DETAIL_RIGHT_FMT,
     HEAD_FMT,
+    HSN_ROW_CENTER_FMT,
+    HSN_ROW_RIGHT_FMT,
     MONO_BILL_DETAIL_FMT,
     PH_FMT,
     SMALL_DETAIL_FMT,
@@ -252,15 +254,15 @@ export const fillHsnHeader = (sheet: Worksheet, row: number, igst: boolean) => {
     if (igst) {
         sheet.getCell(row, 5).value = "IGST"
         sheet.getCell(row, 5).style = TABLE_HEADER_FMT
-        sheet.mergeCells(row, 5, row, 7)
+        sheet.mergeCells(row, 5, row, 6)
     } else {
         sheet.getCell(row, 5).value = "CGST"
         sheet.getCell(row, 5).style = TABLE_HEADER_FMT
-        sheet.mergeCells(row, 5, row, 7)
+        sheet.mergeCells(row, 5, row, 6)
 
-        sheet.getCell(row, 8).value = "SGST"
-        sheet.getCell(row, 8).style = TABLE_HEADER_FMT
-        sheet.mergeCells(row, 8, row, 10)
+        sheet.getCell(row, 7).value = "SGST"
+        sheet.getCell(row, 7).style = TABLE_HEADER_FMT
+        sheet.mergeCells(row, 7, row, 8)
     }
 }
 
@@ -276,25 +278,25 @@ export const fillHsnRow = (
     const halfTotal = total / 2
     const halfGst = gst / 2
     sheet.getCell(row, 1).value = hsn
-    sheet.getCell(row, 1).style = DETAIL_CENTER_FMT
+    sheet.getCell(row, 1).style = HSN_ROW_CENTER_FMT
     sheet.mergeCells(row, 1, row, 2)
 
     sheet.getCell(row, 3).value = rate.toFixed(2)
-    sheet.getCell(row, 3).style = DETAIL_RIGHT_FMT
+    sheet.getCell(row, 3).style = HSN_ROW_RIGHT_FMT
     sheet.mergeCells(row, 3, row, 4)
 
     if (igst) {
         sheet.getCell(row, 5).value = `${gst}% ${total.toFixed(2)}`
-        sheet.getCell(row, 5).style = DETAIL_RIGHT_FMT
-        sheet.mergeCells(row, 5, row, 7)
+        sheet.getCell(row, 5).style = HSN_ROW_RIGHT_FMT
+        sheet.mergeCells(row, 5, row, 6)
     } else {
         sheet.getCell(row, 5).value = `${halfGst}% ${halfTotal.toFixed(2)}`
-        sheet.getCell(row, 5).style = DETAIL_RIGHT_FMT
-        sheet.mergeCells(row, 5, row, 7)
+        sheet.getCell(row, 5).style = HSN_ROW_RIGHT_FMT
+        sheet.mergeCells(row, 5, row, 6)
 
-        sheet.getCell(row, 8).value = `${halfGst}% ${halfTotal.toFixed(2)}`
-        sheet.getCell(row, 8).style = DETAIL_RIGHT_FMT
-        sheet.mergeCells(row, 8, row, 10)
+        sheet.getCell(row, 7).value = `${halfGst}% ${halfTotal.toFixed(2)}`
+        sheet.getCell(row, 7).style = HSN_ROW_RIGHT_FMT
+        sheet.mergeCells(row, 7, row, 8)
     }
 }
 
