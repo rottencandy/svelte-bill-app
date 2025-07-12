@@ -36,7 +36,7 @@ import {
     TNC_DATA,
     TNC_HEADER_DATA,
 } from "./data"
-import { Bill, Gst, Item, Party, Total } from "src/types"
+import { Bill, Gst, Item, Party, Total } from "../types"
 
 export const applyBaseLayout = (
     sheet: Worksheet,
@@ -251,18 +251,21 @@ export const fillHsnHeader = (sheet: Worksheet, row: number, igst: boolean) => {
     sheet.getCell(row, 3).style = TABLE_HEADER_FMT
     sheet.mergeCells(row, 3, row, 4)
 
-    if (igst) {
-        sheet.getCell(row, 5).value = "IGST"
-        sheet.getCell(row, 5).style = TABLE_HEADER_FMT
-        sheet.mergeCells(row, 5, row, 6)
-    } else {
-        sheet.getCell(row, 5).value = "CGST"
-        sheet.getCell(row, 5).style = TABLE_HEADER_FMT
-        sheet.mergeCells(row, 5, row, 6)
+    sheet.getCell(row, 5).value = "Quantity"
+    sheet.getCell(row, 5).style = TABLE_HEADER_FMT
 
-        sheet.getCell(row, 7).value = "SGST"
-        sheet.getCell(row, 7).style = TABLE_HEADER_FMT
-        sheet.mergeCells(row, 7, row, 8)
+    if (igst) {
+        sheet.getCell(row, 6).value = "IGST"
+        sheet.getCell(row, 6).style = TABLE_HEADER_FMT
+        sheet.mergeCells(row, 6, row, 7)
+    } else {
+        sheet.getCell(row, 6).value = "CGST"
+        sheet.getCell(row, 6).style = TABLE_HEADER_FMT
+        sheet.mergeCells(row, 6, row, 7)
+
+        sheet.getCell(row, 8).value = "SGST"
+        sheet.getCell(row, 8).style = TABLE_HEADER_FMT
+        sheet.mergeCells(row, 8, row, 9)
     }
 }
 
@@ -271,6 +274,7 @@ export const fillHsnRow = (
     hsn: string,
     gst: Gst,
     rate: number,
+    quantity: number,
     row: number,
     igst: boolean,
 ) => {
@@ -285,18 +289,21 @@ export const fillHsnRow = (
     sheet.getCell(row, 3).style = HSN_ROW_RIGHT_FMT
     sheet.mergeCells(row, 3, row, 4)
 
-    if (igst) {
-        sheet.getCell(row, 5).value = `${gst}% ${total.toFixed(2)}`
-        sheet.getCell(row, 5).style = HSN_ROW_RIGHT_FMT
-        sheet.mergeCells(row, 5, row, 6)
-    } else {
-        sheet.getCell(row, 5).value = `${halfGst}% ${halfTotal.toFixed(2)}`
-        sheet.getCell(row, 5).style = HSN_ROW_RIGHT_FMT
-        sheet.mergeCells(row, 5, row, 6)
+    sheet.getCell(row, 5).value = `${quantity}`
+    sheet.getCell(row, 5).style = HSN_ROW_RIGHT_FMT
 
-        sheet.getCell(row, 7).value = `${halfGst}% ${halfTotal.toFixed(2)}`
-        sheet.getCell(row, 7).style = HSN_ROW_RIGHT_FMT
-        sheet.mergeCells(row, 7, row, 8)
+    if (igst) {
+        sheet.getCell(row, 6).value = `${gst}% ${total.toFixed(2)}`
+        sheet.getCell(row, 6).style = HSN_ROW_RIGHT_FMT
+        sheet.mergeCells(row, 6, row, 7)
+    } else {
+        sheet.getCell(row, 6).value = `${halfGst}% ${halfTotal.toFixed(2)}`
+        sheet.getCell(row, 6).style = HSN_ROW_RIGHT_FMT
+        sheet.mergeCells(row, 6, row, 7)
+
+        sheet.getCell(row, 8).value = `${halfGst}% ${halfTotal.toFixed(2)}`
+        sheet.getCell(row, 8).style = HSN_ROW_RIGHT_FMT
+        sheet.mergeCells(row, 8, row, 9)
     }
 }
 

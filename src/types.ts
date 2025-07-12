@@ -40,5 +40,6 @@ export type Total = {
 
 export type HsnTotal = {
     rate: number
+    quantity: number
     gst: Gst
 }

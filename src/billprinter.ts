@@ -66,10 +66,10 @@ export const fillDataToTempFile = async (
 
                 // rows
                 for (let i = 0; i < hsnTotals.length; i++) {
-                    const [hsn, { gst, rate }] = hsnTotals[i]
+                    const [hsn, { gst, rate, quantity }] = hsnTotals[i]
                     // + 1 for title
                     const row = hsnStartRow + 1 + i
-                    fillHsnRow(worksheet, hsn, gst, rate, row, igst)
+                    fillHsnRow(worksheet, hsn, gst, rate, quantity, row, igst)
                 }
             }
             // Print totals in last page

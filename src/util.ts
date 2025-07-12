@@ -44,10 +44,11 @@ export const calculateTotalsByHsn = (items: Item[]) =>
     items.reduce<Record<string, HsnTotal>>((acc, item) => {
         let hsnTotal = acc[item.hsn]
         if (hsnTotal === undefined) {
-            hsnTotal = { rate: 0, gst: item.gst }
+            hsnTotal = { rate: 0, quantity: 0, gst: item.gst }
             acc[item.hsn] = hsnTotal
         }
         hsnTotal.rate += item.rate * item.quantity
+        hsnTotal.quantity += item.quantity
         return acc
     }, {})
 
