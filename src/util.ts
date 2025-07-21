@@ -62,7 +62,9 @@ export const calculatePages = (
     // +1 for hsn table header
     const hsnLines = Object.entries(calculateTotalsByHsn(items)).length + 1
 
-    const linesInLastPage = items.length % MAX_ITEMS_IN_PAGE
+    let linesInLastPage = items.length % MAX_ITEMS_IN_PAGE
+    linesInLastPage =
+        linesInLastPage === 0 ? MAX_ITEMS_IN_PAGE : linesInLastPage
     const emptyLinesInLastPage = MAX_ITEMS_IN_PAGE - linesInLastPage
     // add extra page if hsn table cannot fit in last page
     const totalPages = emptyLinesInLastPage >= hsnLines ? pages : pages + 1
