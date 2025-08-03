@@ -4,11 +4,13 @@ import initSqlJs from "sql.js"
 import { BASEPATH } from "./const"
 
 const baseDbPath = path.join(BASEPATH, "__database__")
+const savenamePath = path.join(BASEPATH, "savename.txt")
+
 const pvtAddressPath = path.join(baseDbPath, "pvtaddresses.json")
 const addressesPath = path.join(baseDbPath, "addresses.json")
 const itemsPath = path.join(baseDbPath, "items.json")
 const unitsPath = path.join(baseDbPath, "units.json")
-const savenamePath = path.join(BASEPATH, "savename.txt")
+const sqliteDbPath = path.join(baseDbPath, "database.db")
 
 /** key, value paris of name to [address, tin], addresses.json */
 type Addresses = Record<string, [address: string, tin: string]>
@@ -98,6 +100,7 @@ export const initSqlDb = async () => {
     const sql = await initSqlJs({
         locateFile: (file) => `./node_modules/sql.js/dist/${file}`,
     })
-    const db = new sql.Database()
+    const data = readFileSync(sqliteDbPath)
+    const db = new sql.Database(data)
     return db
 }
