@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from "fs"
 import path from "path"
+import initSqlJs from "sql.js"
 import { BASEPATH } from "./const"
 
 const baseDbPath = path.join(BASEPATH, "__database__")
@@ -91,4 +92,12 @@ export const setUnit = (unit: string): void => {
 export const incrementSavename = (): void => {
     const no = parseInt(readFileSync(savenamePath, "utf-8"), 10)
     writeFileSync(`${BASEPATH}/savename.txt`, (no + 1).toString())
+}
+
+export const initSqlDb = async () => {
+    const sql = await initSqlJs({
+        locateFile: (file) => `./node_modules/sql.js/dist/${file}`,
+    })
+    const db = new sql.Database()
+    return db
 }
