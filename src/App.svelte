@@ -13,6 +13,7 @@
     } from "./billprinter"
     import { getInvoiceNo, incrementSavename } from "./database"
     import { calculateTotal } from "./util"
+    import { VERSION } from "./const"
 
     let printDialogElement: any
     let billDetailsElement: any
@@ -144,6 +145,7 @@
             onPrint={handlePrint}
         />
     </div>
+    <div class="text-gray-500 text-right">{VERSION}</div>
 </main>
 
 <style>
