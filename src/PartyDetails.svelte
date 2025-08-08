@@ -1,9 +1,8 @@
 <script lang="ts">
     import type { FocusEventHandler } from "svelte/elements"
-    import type { Party } from "./types"
+    import type { Party, Context } from "./types"
     import {
-        getAllPvtMarks,
-        getNameByPvt,
+        createPvtFilter,
         getPartyDetails,
         setPartyDetails,
     } from "./database"
@@ -12,39 +11,37 @@
 
     let {
         party = $bindable(),
+        ctx,
         onautofill,
-    }: { party: Party; onautofill: () => void } = $props()
+    }: { party: Party; onautofill: () => void; ctx: Context } = $props()
 
     let pvtField: HTMLInputElement
-    let pvtnames = $state.raw(getAllPvtMarks())
+    const db = ctx.db
+    const nameFilter = createPvtFilter(db)
 
     const handlePvtBlur: FocusEventHandler<HTMLInputElement> = (e) => {
-        // check and autofill party details
-        const name = getNameByPvt(party.privateMark)
-        if (name !== undefined) {
+        const details = getPartyDetails(db, party.privateMark)
+        if (details !== undefined) {
+            e.preventDefault()
+            const [name, address, tin] = details
             party.name = name
-            const details = getPartyDetails(name)
-            if (details !== undefined) {
-                e.preventDefault()
-                const [address, tin] = details
-                party.address = address
-                party.tin = tin
-                onautofill()
-            }
+            party.address = address
+            party.tin = tin
+            onautofill()
         }
         // else if name doesn't exist in pvt, let user fill it up
     }
 
     const handleGstinBlur: FocusEventHandler<HTMLInputElement> = () => {
         // save party details if filled
-        if (party.name && (party.address || party.tin)) {
+        if (party.name) {
             setPartyDetails(
+                db,
+                party.privateMark,
                 party.name,
                 party.address,
                 party.tin,
-                party.privateMark,
             )
-            pvtnames = [...pvtnames, party.privateMark]
         }
     }
 
@@ -55,11 +52,7 @@
             showOnFocus: true,
             minLength: 0,
             fetch: (input, update) => {
-                const text = input.toLowerCase()
-                const suggestions = pvtnames
-                    .filter((n) => n.toLowerCase().includes(text))
-                    .map((n) => ({ label: n, value: n }))
-                update(suggestions)
+                update(nameFilter(input).map((n) => ({ label: n, value: n })))
             },
             onSelect: (item) => {
                 if (item.label !== undefined) {
@@ -87,11 +80,6 @@
                 class="w-full p-2 border rounded"
                 autocomplete="off"
             />
-            <datalist id="pvt-names">
-                {#each pvtnames as pvt}
-                    <option value={pvt}></option>
-                {/each}
-            </datalist>
         </label>
     </div>
 

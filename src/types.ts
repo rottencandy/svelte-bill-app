@@ -1,4 +1,10 @@
+import { Database } from "sql.js"
+
 export type Gst = 12 | 18 | 28
+
+export type Context = {
+    db: Database
+}
 
 export type Party = {
     name: string

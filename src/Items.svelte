@@ -1,10 +1,18 @@
 <script lang="ts">
     import autocomplete from "autocompleter"
-    import type { Item } from "./types"
-    import { getItems, getUnits, setHsn, setUnit } from "./database"
+    import type { Context, Item } from "./types"
+    import {
+        setHsn,
+        getUnits,
+        setUnit,
+        createItemFilter,
+        getItemHsn,
+    } from "./database"
     import { onMount } from "svelte"
 
-    let { items = $bindable() }: { items: Item[] } = $props()
+    let { ctx, items = $bindable() }: { ctx: Context; items: Item[] } = $props()
+
+    const db = ctx.db
 
     let nameField: HTMLInputElement
     let sizeField: HTMLInputElement
@@ -12,10 +20,8 @@
     let unitField: HTMLInputElement
     let rateField: HTMLInputElement
 
-    let itemDetails = $state.raw(getItems())
+    const itemFilter = createItemFilter(db)
     let units = $state.raw(getUnits())
-
-    const itemNames = $derived(Object.keys(itemDetails))
 
     const getDefault = () => ({
         particulars: "",
@@ -67,7 +73,7 @@
     }
 
     const handleNameBlur = () => {
-        const hsn = itemDetails[currentItem.particulars]
+        const hsn = getItemHsn(db, currentItem.particulars)
         if (hsn !== undefined) {
             currentItem.hsn = hsn
         }
@@ -82,11 +88,7 @@
 
     const handleHsnBlur = () => {
         if (currentItem.particulars && currentItem.hsn) {
-            setHsn(currentItem.particulars, currentItem.hsn)
-            itemDetails = {
-                ...itemDetails,
-                [currentItem.particulars]: currentItem.hsn,
-            }
+            setHsn(db, currentItem.particulars, currentItem.hsn)
         }
     }
 
@@ -104,11 +106,7 @@
             showOnFocus: true,
             minLength: 0,
             fetch: (input, update) => {
-                const text = input.toLowerCase()
-                const suggestions = itemNames
-                    .filter((n) => n.toLowerCase().includes(text))
-                    .map((n) => ({ label: n, value: n }))
-                update(suggestions)
+                update(itemFilter(input).map((n) => ({ label: n, value: n })))
             },
             onSelect: (item) => {
                 if (item.label !== undefined) {

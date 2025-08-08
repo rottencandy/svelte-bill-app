@@ -206,7 +206,7 @@ export const cleanupTempFiles = () => {
 }
 
 const sendPrintJob = async (filePath: string) => {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
         // Spawn a new process to run the Python script
         const pythonProcess = spawn("py", ["print_bill.py", filePath])
 
@@ -223,6 +223,9 @@ const sendPrintJob = async (filePath: string) => {
         // Handle process exit
         pythonProcess.on("close", (code) => {
             console.log(`Script exited with code ${code}`)
+            if (code) {
+                reject("Failed!")
+            }
             resolve()
         })
     })

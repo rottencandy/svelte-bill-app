@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Item, Bill, Party } from "./types"
+    import type { Item, Bill, Party, Context } from "./types"
     import PartyDetails from "./PartyDetails.svelte"
     import BillDetails from "./BillDetails.svelte"
     import Items from "./Items.svelte"
@@ -11,12 +11,21 @@
         saveTempFileAndSchedulePrintJob,
         saveTempToFile,
     } from "./billprinter"
-    import { getInvoiceNo, incrementSavename } from "./database"
+    import {
+        getInvoiceNo,
+        incrementSavename,
+        initSqlDb,
+        saveSqlDb,
+    } from "./database"
     import { calculateTotal } from "./util"
     import { VERSION } from "./const"
+    import { onMount } from "svelte"
+    import type { Database } from "sql.js"
 
-    let printDialogElement: any
-    let billDetailsElement: any
+    let printDialogElement = $state<PrintDialog>()
+    let billDetailsElement = $state<BillDetails>()
+    let ctx = $state.raw<Context>()
+    let db: Database
 
     let partyDetails = $state<Party>({
         name: "",
@@ -61,27 +70,29 @@
             `${billDetails.invoice}`,
         )
         incrementSavename()
+        saveSqlDb(db)
         cleanupTempFiles()
         resetAppState()
-        printDialogElement.close()
+        printDialogElement?.close()
     }
 
     const handleSave = async () => {
         const wb = await fillTempFile()
         await saveTempToFile(wb, "Original Copy", `${billDetails.invoice}`)
         incrementSavename()
+        saveSqlDb(db)
         cleanupTempFiles()
         resetAppState()
-        printDialogElement.close()
+        printDialogElement?.close()
     }
 
     const printBill = () => {
         console.log("Printing bill...")
-        printDialogElement.open()
+        printDialogElement?.open()
     }
 
     const handlePartyDetailAutofill = () => {
-        billDetailsElement.focus()
+        billDetailsElement?.focus()
     }
 
     const resetAppState = () => {
@@ -103,50 +114,58 @@
         useIGST = false
         otherAmount = 0
     }
+
+    onMount(async () => {
+        db = await initSqlDb()
+        ctx = { db }
+    })
 </script>
 
-<main>
-    <div class="container mx-auto p-4 max-w-6xl">
-        <h1 class="text-2xl font-bold text-center bg-green-200 p-2 mb-4">
-            TAX INVOICE
-        </h1>
+{#if ctx !== undefined}
+    <main>
+        <div class="container mx-auto p-4 max-w-6xl">
+            <h1 class="text-2xl font-bold text-center bg-green-200 p-2 mb-4">
+                TAX INVOICE
+            </h1>
 
-        <div class="flex mb-6 gap-4">
-            <PartyDetails
-                bind:party={partyDetails}
-                onautofill={handlePartyDetailAutofill}
+            <div class="flex mb-6 gap-4">
+                <PartyDetails
+                    bind:party={partyDetails}
+                    {ctx}
+                    onautofill={handlePartyDetailAutofill}
+                />
+                <BillDetails
+                    bind:this={billDetailsElement}
+                    bind:bill={billDetails}
+                />
+            </div>
+
+            <div class="border p-4 rounded mb-6">
+                <h2 class="font-bold mb-2">Items ({items.length})</h2>
+                <Items bind:items />
+            </div>
+
+            <Total {items} {total} bind:useIGST bind:otherAmount />
+
+            <div class="flex justify-center">
+                <button
+                    onclick={printBill}
+                    class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+                >
+                    Print...
+                </button>
+            </div>
+
+            <PrintDialog
+                bind:this={printDialogElement}
+                {items}
+                onSave={handleSave}
+                onPrint={handlePrint}
             />
-            <BillDetails
-                bind:this={billDetailsElement}
-                bind:bill={billDetails}
-            />
         </div>
-
-        <div class="border p-4 rounded mb-6">
-            <h2 class="font-bold mb-2">Items ({items.length})</h2>
-            <Items bind:items />
-        </div>
-
-        <Total {items} {total} bind:useIGST bind:otherAmount />
-
-        <div class="flex justify-center">
-            <button
-                onclick={printBill}
-                class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
-            >
-                Print...
-            </button>
-        </div>
-
-        <PrintDialog
-            bind:this={printDialogElement}
-            {items}
-            onSave={handleSave}
-            onPrint={handlePrint}
-        />
-    </div>
-    <div class="text-gray-500 text-right">{VERSION}</div>
-</main>
+        <div class="text-gray-500 text-right">{VERSION}</div>
+    </main>
+{/if}
 
 <style>
 </style>
